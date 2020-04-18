@@ -87,7 +87,6 @@ public class NodeClient {
 
     }
 
-
     public void receivedMulticastReply() throws Exception, JSONException{
         Integer receivedNumberOfMessages = 0;
         Boolean leaveWhile = Boolean.FALSE;
@@ -128,7 +127,7 @@ public class NodeClient {
         }while(!leaveWhile && receivedNumberOfMessages<3);
     }
 
-    public void receivedShutdown(JSONObject json){
+    public void receivedShutdown(JSONObject json) throws JSONException{
 
         Integer updateID = json.getInt("updateID");
         if(updateID>nextID){
@@ -170,7 +169,7 @@ public class NodeClient {
         }
     }
 
-    public void shutdown () throws IOException {
+    public void shutdown () throws IOException, JSONException {
     //That is the part of the NS:
     JSONObject json = new JSONObject();
     Integer h = hashing.createHash(nodeName);
