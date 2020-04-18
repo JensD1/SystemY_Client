@@ -181,8 +181,6 @@ public class NodeClient {
         byte[] contents = obj.toString().getBytes();
         DatagramPacket packet = new DatagramPacket(contents,contents.length, MCgroup, 6012);
         ms.send(packet);
-        //ms.leaveGroup(ms.getLocalSocketAddress(), NetworkInterface.getByInetAddress(group));
-
     }
 
     public void shutdown () throws IOException, JSONException {
