@@ -2,6 +2,7 @@ package ua.dist8;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.w3c.dom.Node;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,16 +25,22 @@ public class TCPThreadHandler extends Thread {
                 JSONObject json = new JSONObject(message);
 
                 if(json.getString("typeOfMsg").equals("shutdown")){
-                    //todo
+                    NodeClient nodeClient = new NodeClient();
+                    nodeClient.shutdown();
                 }
                 else if(json.getString("typeOfMsg").equals("fileRequest")){
                     //todo
                 }
-                else if(json.getString("typeOfMsg").equals("multicastReply")){
-                    //todo
+                else if(json.getString("typeOfMsg").equals("multicastReplyNameServer")){
+                    NodeClient nodeClient = new NodeClient();
+                    nodeClient.receiveMulticastRelplyNS();
+                }
+                else if(json.getString("typeOfMsg").equals("multicastReplyNode")){
+                    NodeClient nodeClient = new NodeClient();
+                    nodeClient.receiveMulticastRelplyNode();
                 }
             }
-        } catch (IOException | JSONException e) {
+        } catch (Exception e){
             e.printStackTrace();
         }
     }

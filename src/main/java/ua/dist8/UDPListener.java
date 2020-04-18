@@ -17,7 +17,7 @@ public class UDPListener extends Thread {
             System.out.println("Initializing UDP listener..." );
             MulticastSocket ms = new MulticastSocket(6012);
             InetAddress MCgroup = InetAddress.getByName("224.0.0.200");
-            ms.joinGroup(MCgroup);
+            ms.joinGroup(MCgroup); // todo
             System.out.println("Listening on Multicast address 224.0.0.200");
             while(true){
                 byte[] buf = new byte[1000];

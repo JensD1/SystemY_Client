@@ -1,4 +1,5 @@
 package ua.dist8;
+import com.sun.org.apache.xpath.internal.operations.Bool;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -50,10 +51,11 @@ public class NodeClient {
 
         Integer currentID = hashing.createHash(nodeName);
         JSONObject json = new JSONObject();
-        json.put("typeOfMsg","multicastReply");
+        json.put("typeOfMsg","multicastReplyNode");
         if(currentID<hash && hash<nextID){
             nextID = hash;
             json.put("typeOfNode", "CL");
+            json.put("isEndNode", Boolean.FALSE);
             json.put("currentID", currentID);
             json.put("newNodeID", nextID);
             sendUnicastMessage(nodeIP, json);
@@ -61,6 +63,7 @@ public class NodeClient {
         if(previousID< hash && hash<currentID){
             previousID = hash;
             json.put("typeOfNode", "CL");
+            json.put("isEndNode", Boolean.FALSE);
             json.put("currentID", currentID);
             json.put("newNodeID", previousID);
             sendUnicastMessage(nodeIP, json);
@@ -70,6 +73,7 @@ public class NodeClient {
             if(currentID < hash){ // the new node has a higher ID
                 nextID = hash;
                 json.put("typeOfNode", "CL");
+                json.put("isEndNode", Boolean.TRUE);
                 json.put("currentID", currentID);
                 json.put("newNodeID", nextID);
                 sendUnicastMessage(nodeIP, json);
@@ -79,6 +83,7 @@ public class NodeClient {
             if(currentID > hash){ // The new node has a lower ID.
                 previousID = hash;
                 json.put("typeOfNode", "CL");
+                json.put("isEndNode", Boolean.TRUE);
                 json.put("currentID", currentID);
                 json.put("newNodeID", previousID);
                 sendUnicastMessage(nodeIP, json);
@@ -94,10 +99,7 @@ public class NodeClient {
      * 3) the currentID ( this is the ID of the existing node in the network ).
      * 4) the newNodeID ( this is the ID of the node that wants to enter the network ).
      * @param toSend the InetAddress to were to send.
-     * @param currentID The ID of the node that is already in the network.
-     * @param newNodeID The ID of the node that wants to join the network.
-     * @param isEndNode This boolean will be true if the currentID corresponds to an "endnode",
-     *                  which is the node with the highest/lowest ID number in the network
+     * @param json JSON object that will be transmitted.
      * @throws IOException the exception to handle the outputStream exceptions
      * @throws JSONException the exception to handle the JSON exceptions
      */
@@ -123,9 +125,6 @@ public class NodeClient {
         Integer receivedNumberOfMessages = 0;
         Boolean leaveWhile = Boolean.FALSE;
 
-        //Initialize socket
-        System.out.println("Waiting for response of a multicast bootstrap.");
-        ServerSocket serverSocket = new ServerSocket(5000);
         do{// make threaded!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
             Socket clientSocket = serverSocket.accept();
@@ -204,35 +203,35 @@ public class NodeClient {
     }
 
     public void shutdown () throws IOException, JSONException {
-    //That is the part of the NS:
-    JSONObject json = new JSONObject();
-    Integer h = hashing.createHash(nodeName);
-    json.put("typeOfNode", "CL");
-    json.put("typeOfMsg","shutdown");
-    json.put("ID",h);
-    sendUnicastMessage(nsIP,json);
+        //That is the part of the NS:
+        JSONObject json = new JSONObject();
+        Integer h = hashing.createHash(nodeName);
+        json.put("typeOfNode", "CL");
+        json.put("typeOfMsg","shutdown");
+        json.put("ID",h);
+        sendUnicastMessage(nsIP,json);
 
-    //This part is for the neighboring nodes:
-    String name = nsIP.getHostName();
-    JSONObject json2 = new JSONObject();
-    json2.put("typeOfMsg","shutdown");
-    json2.put("updateID",nextID);
-    URL url = new URL ("http://" +name+ ":8080/neighbourRequest?nodeID="+h);
-    HttpURLConnection con = (HttpURLConnection) url.openConnection();
-    con.setRequestMethod("GET");
-    BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
-    String inputLine;
-    StringBuffer content = new StringBuffer();
-    while ((inputLine = in.readLine()) != null) {
-        content.append(inputLine);
-    }
-    in.close();
-    con.disconnect();
-    JSONObject j = new JSONObject(inputLine);
-    InetAddress previousNeighbor = (InetAddress) j.get("previousIP");
-    sendUnicastMessage(previousNeighbor,json2);
-    json2.put("updateID",previousID);
-    InetAddress nextNeighbor = (InetAddress) j.get("nextIP");
-    sendUnicastMessage(nextNeighbor,json2);
+        //This part is for the neighboring nodes:
+        String name = nsIP.getHostName();
+        JSONObject json2 = new JSONObject();
+        json2.put("typeOfMsg","shutdown");
+        json2.put("updateID",nextID);
+        URL url = new URL ("http://" +name+ ":8080/neighbourRequest?nodeID="+h);
+        HttpURLConnection con = (HttpURLConnection) url.openConnection();
+        con.setRequestMethod("GET");
+        BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+        String inputLine;
+        StringBuffer content = new StringBuffer();
+        while ((inputLine = in.readLine()) != null) {
+            content.append(inputLine);
+        }
+        in.close();
+        con.disconnect();
+        JSONObject j = new JSONObject(inputLine);
+        InetAddress previousNeighbor = (InetAddress) j.get("previousNode");
+        sendUnicastMessage(previousNeighbor,json2);
+        json2.put("updateID",previousID);
+        InetAddress nextNeighbor = (InetAddress) j.get("nextNode");
+        sendUnicastMessage(nextNeighbor,json2);
     }
 }
