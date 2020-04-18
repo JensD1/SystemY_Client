@@ -113,7 +113,7 @@ public class NodeClient {
      * @throws Exception
      * @throws JSONException
      */
-    public void receiveMulticastRelply() throws Exception, JSONException{
+    public void receiveMulticastRelply() throws Exception, JSONException{ // todo
         Integer receivedNumberOfMessages = 0;
         Boolean leaveWhile = Boolean.FALSE;
 
