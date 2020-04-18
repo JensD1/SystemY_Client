@@ -41,7 +41,7 @@ public class NodeClient {
      * @param receivedNodeName is the name of the node that wants to join
      * @param nodeIP is the IP-address of the node that wants to join
      */
-    public void receivedMulticast(String receivedNodeName, InetAddress nodeIP) throws IOException, JSONException {
+    public void multicastHandler(String receivedNodeName, InetAddress nodeIP) throws IOException, JSONException {
         Integer hash = hashing.createHash(receivedNodeName);
 
         try {
@@ -113,7 +113,7 @@ public class NodeClient {
      * @throws Exception
      * @throws JSONException
      */
-    public void receiveUnicastMessage() throws Exception, JSONException{
+    public void receiveMulticastRelply() throws Exception, JSONException{
         Integer receivedNumberOfMessages = 0;
         Boolean leaveWhile = Boolean.FALSE;
 
@@ -181,28 +181,5 @@ public class NodeClient {
         ms.send(packet);
         //ms.leaveGroup(ms.getLocalSocketAddress(), NetworkInterface.getByInetAddress(group));
 
-    }
-
-    /**
-     * In this method we will let the node scan for incoming UDP messages on the multicast address 224.0.0.200.
-     * When there is such an incoming message, there is a node that wants to join the network an we will let
-     * the receivedMulticast method handle this.
-     * @throws IOException
-     * @throws JSONException
-     */
-    public void receiveMC () throws IOException, JSONException{
-        MulticastSocket ms = new MulticastSocket(6012);
-        InetAddress MCgroup = InetAddress.getByName("224.0.0.200");
-        ms.joinGroup(MCgroup);
-        while(true) { // Make thread!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            byte[] buf = new byte[1000];
-            DatagramPacket recv = new DatagramPacket(buf, buf.length);
-            ms.receive(recv);
-            if (recv.getLength() > 0) {
-                String s = new String(String.valueOf(recv));
-                JSONObject jsonObject = new JSONObject(s);
-                receivedMulticast(jsonObject.getString("name"), (InetAddress)jsonObject.get("ip"));
-            }
-        }
     }
 }
