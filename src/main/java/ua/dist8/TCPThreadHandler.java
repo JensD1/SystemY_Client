@@ -24,22 +24,28 @@ public class TCPThreadHandler extends Thread {
                 String message = new String(contents);
                 JSONObject json = new JSONObject(message);
 
-                if(json.getString("typeOfMsg").equals("shutdown")){
-                    NodeClient nodeClient = new NodeClient();
-                    nodeClient.shutdown();
-                }
-                else if(json.getString("typeOfMsg").equals("fileRequest")){
-                    //todo
-                }
-                else if(json.getString("typeOfMsg").equals("multicastReplyNameServer")){
-                    NodeClient nodeClient = new NodeClient();
-                    nodeClient.receiveMulticastRelplyNS();
-                }
-                else if(json.getString("typeOfMsg").equals("multicastReplyNode")){
-                    NodeClient nodeClient = new NodeClient();
-                    nodeClient.receiveMulticastRelplyNode();
+                switch (json.getString("typeOfMsg")) {
+                    case "shutdown": {
+                        NodeClient nodeClient = new NodeClient();
+                        nodeClient.shutdown();
+                        break;
+                    }
+                    case "fileRequest":
+                        //todo
+                        break;
+                    case "multicastReply": {
+                        NodeClient nodeClient = new NodeClient();
+                        if (json.getString("typeOfNode").equals("NS")) {
+                            nodeClient.receiveMulticastReplyNS(json, clientSocket.getInetAddress());
+                        } else if (json.getString("typeOfNode").equals("CL")) {
+                            nodeClient.receiveMulticastReplyNode(json);
+                        }
+                        break;
+                    }
                 }
             }
+            clientInput.close();
+            clientSocket.close();
         } catch (Exception e){
             e.printStackTrace();
         }

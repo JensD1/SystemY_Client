@@ -51,7 +51,7 @@ public class NodeClient {
 
         Integer currentID = hashing.createHash(nodeName);
         JSONObject json = new JSONObject();
-        json.put("typeOfMsg","multicastReplyNode");
+        json.put("typeOfMsg","multicastReply");
         if(currentID<hash && hash<nextID){
             nextID = hash;
             json.put("typeOfNode", "CL");
@@ -113,6 +113,7 @@ public class NodeClient {
 
     }
 
+    //todo comment verbeteren
     /**
      *  Once a multicast message is sent, the node that wants to access the network needs to listen to all responses.
      *  In the case that this is the first node, there will be only one message from the NamingServer, otherwise
@@ -121,50 +122,32 @@ public class NodeClient {
      * @throws Exception
      * @throws JSONException
      */
-    public void receiveMulticastRelply() throws Exception, JSONException{ // todo
-        Integer receivedNumberOfMessages = 0;
-        Boolean leaveWhile = Boolean.FALSE;
-
-        do{// make threaded!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-            Socket clientSocket = serverSocket.accept();
-            InputStream clientInput = clientSocket.getInputStream();
-            byte[] contents = new byte[10000]; // pas dit nog aan !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-            if( clientInput.read(contents) != -1){ // the message is not empty.
-                String message = new String(contents);
-                JSONObject json = new JSONObject(message);
-                receivedNumberOfMessages++;
-                if(json.getString("typeOfNode").equals("NS")){ // Als het bericht komt van de NamingServer
-                    nsIP = clientSocket.getInetAddress(); //This will save the IP-address of the NS for later use
-                    if(json.getInt("amountOfNodes") <= 0) // The JSON object of a NamingServer needs to contain this field.
-                        leaveWhile = Boolean.TRUE; // er is maar 1 bericht dat ontvangen moest worden en dit is ontvangen
-                        nextID = hashing.createHash(nodeName);
-                        previousID = hashing.createHash(nodeName);
-                }
-                if(json.getString("typeOfNode").equals("CL")){
-                    Boolean isEndNode = json.getBoolean("isEndNode");
-                    Integer currentID = json.getInt("currentID"); // The other ones ID
-                    Integer newNodeID = json.getInt("newNodeID"); // Your own ID
-                    if(!isEndNode) {
-                        if (currentID > newNodeID) {
-                            nextID = currentID;
-                        } else {
-                            previousID = currentID;
-                        }
-                    }
-                    else{
-                        if (currentID > newNodeID) {
-                            previousID = currentID;
-                        } else {
-                            nextID = currentID;
-                        }
-                    }
-                }
+    public void receiveMulticastReplyNode(JSONObject json) throws JSONException{
+        Boolean isEndNode = json.getBoolean("isEndNode");
+        Integer currentID = json.getInt("currentID"); // The other ones ID
+        Integer newNodeID = json.getInt("newNodeID"); // Your own ID
+        if(!isEndNode) {
+            if (currentID > newNodeID) {
+                nextID = currentID;
+            } else {
+                previousID = currentID;
             }
-            clientInput.close();
-            clientSocket.close();
-        }while(!leaveWhile && receivedNumberOfMessages<3);
+        }
+        else{
+            if (currentID > newNodeID) {
+                previousID = currentID;
+            } else {
+                nextID = currentID;
+            }
+        }
+    }
+
+    public void receiveMulticastReplyNS(JSONObject json, InetAddress nsIP) throws JSONException{
+        this.nsIP = nsIP; //This will save the IP-address of the NS for later use
+        if(json.getInt("amountOfNodes") <= 0){
+            nextID = hashing.createHash(nodeName);
+            previousID = hashing.createHash(nodeName);
+        }
     }
 
     public void receivedShutdown(JSONObject json) throws JSONException{
