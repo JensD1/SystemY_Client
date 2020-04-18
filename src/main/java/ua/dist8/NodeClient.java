@@ -56,7 +56,6 @@ public class NodeClient {
             previousID = hash;
             sendUnicastMessage(nodeIP, currentID, previousID);
         }
-
     }
 
     public void sendUnicastMessage(InetAddress toSend, Integer currentID, Integer newNodeID) throws IOException {
