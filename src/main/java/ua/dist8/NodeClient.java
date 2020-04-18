@@ -47,7 +47,7 @@ public class NodeClient {
 
         Integer currentID = hashing.createHash(nodeName);
         JSONObject json = new JSONObject();
-        json.put("typeOfMsg","Discovery");
+        json.put("typeOfMsg","multicastReply");
         if(currentID<hash && hash<nextID){
             nextID = hash;
             json.put("typeOfNode", "CL");
@@ -141,9 +141,11 @@ public class NodeClient {
     public void multicast() throws IOException, JSONException {
         InetAddress MCgroup = InetAddress.getByName("224.0.0.200");
         JSONObject obj = new JSONObject();
+        obj.put("typeOfMsg","Discovery");
         obj.put("name", nodeName);
         obj.put("ip", InetAddress.getLocalHost());
         MulticastSocket ms = new MulticastSocket(6012);
+        ms.getLocalSocketAddress();
         ms.joinGroup(MCgroup);
         byte[] contents = obj.toString().getBytes();
         DatagramPacket packet = new DatagramPacket(contents,contents.length, MCgroup, 6012);
