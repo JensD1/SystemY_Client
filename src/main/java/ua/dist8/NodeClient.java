@@ -1,4 +1,5 @@
 package ua.dist8;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -37,7 +38,7 @@ public class NodeClient {
      * @param receivedNodeName is the name of the node that wants to join
      * @param nodeIP is the IP-address of the node that wants to join
      */
-    public void receivedMulticast(String receivedNodeName, InetAddress nodeIP) throws IOException {
+    public void receivedMulticast(String receivedNodeName, InetAddress nodeIP) throws IOException, JSONException {
         Integer hash = hashing.createHash(receivedNodeName);
 
         try {
@@ -48,21 +49,36 @@ public class NodeClient {
 
         Integer currentID = hashing.createHash(nodeName);
 
+        // This two if statements will work if a node is added between two nodes with x < node < y
         if(currentID<hash && hash<nextID){
             nextID = hash;
-            sendUnicastMessage(nodeIP, currentID, nextID);
+            sendUnicastMessage(nodeIP, currentID, nextID, Boolean.FALSE);
         }
         if(previousID< hash && hash<currentID){
             previousID = hash;
-            sendUnicastMessage(nodeIP, currentID, previousID);
+            sendUnicastMessage(nodeIP, currentID, previousID, Boolean.FALSE);
+        }
+        // here we will look if the currentID node is the node with the highest or lowes ID number
+        if(currentID>=nextID){ // there is only one node, or multiple nodes but you have the highest ID number because next is lower.
+            if(currentID < hash){ // the new node has a higher ID
+                nextID = hash;
+                sendUnicastMessage(nodeIP, currentID, nextID, Boolean.TRUE);
+            }
+        }
+        if(currentID<=previousID){ // you have the lowest nodeID on the network.
+            if(currentID > hash){ // The new node has a lower ID.
+                previousID = hash;
+                sendUnicastMessage(nodeIP, currentID, previousID, Boolean.TRUE);
+            }
         }
     }
 
-    public void sendUnicastMessage(InetAddress toSend, Integer currentID, Integer newNodeID) throws IOException {
+    public void sendUnicastMessage(InetAddress toSend, Integer currentID, Integer newNodeID, Boolean isEndNode) throws IOException, JSONException {
         Socket socket = new Socket(toSend, 5000);
         OutputStream outputStream = socket.getOutputStream();
         JSONObject json = new JSONObject();
         json.put("typeOfNode", "CL");
+        json.put("isEndNode", isEndNode);
         json.put("currentID", currentID);
         json.put("newNodeID", newNodeID);
         outputStream.write(json.toString().getBytes());
@@ -71,7 +87,7 @@ public class NodeClient {
         socket.close();
     }
   
-    public void receiveUnicastMessage() throws Exception{
+    public void receiveUnicastMessage() throws Exception, JSONException{
         Integer receivedNumberOfMessages = 0;
         Boolean leaveWhile = Boolean.FALSE;
 
@@ -94,13 +110,22 @@ public class NodeClient {
                         previousID = hashing.createHash(nodeName);
                 }
                 if(json.getString("typeOfNode").equals("CL")){
+                    Boolean isEndNode = json.getBoolean("isEndNode");
                     Integer currentID = json.getInt("currentID"); // The other ones ID
                     Integer newNodeID = json.getInt("newNodeID"); // Your own ID
-                    if(currentID > newNodeID){
-                        nextID = currentID;
+                    if(!isEndNode) {
+                        if (currentID > newNodeID) {
+                            nextID = currentID;
+                        } else {
+                            previousID = currentID;
+                        }
                     }
                     else{
-                        previousID = currentID;
+                        if (currentID > newNodeID) {
+                            previousID = currentID;
+                        } else {
+                            nextID = currentID;
+                        }
                     }
                 }
             }
@@ -109,7 +134,7 @@ public class NodeClient {
         }while(!leaveWhile && receivedNumberOfMessages<3);
     }
 
-    public void multicast() throws IOException {
+    public void multicast() throws IOException, JSONException {
         InetAddress MCgroup = InetAddress.getByName("224.0.0.200");
         JSONObject obj = new JSONObject();
         obj.put("name", nodeName);
@@ -123,7 +148,7 @@ public class NodeClient {
 
     }
 
-    public void receiveMC () throws IOException {
+    public void receiveMC () throws IOException, JSONException{
         MulticastSocket ms = new MulticastSocket(6012);
         InetAddress MCgroup = InetAddress.getByName("224.0.0.200");
         ms.joinGroup(MCgroup);
