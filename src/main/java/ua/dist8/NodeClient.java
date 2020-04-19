@@ -13,9 +13,9 @@ import java.util.Scanner;
 import java.util.concurrent.Semaphore;
 
 public class NodeClient {
-    private String nodeName;
-    private Integer nextID;
-    private Integer previousID;
+    static private String nodeName;
+    static private Integer nextID;
+    static private Integer previousID;
     static private InetAddress nsIP;
     static private Semaphore sem = new Semaphore(1);
 
