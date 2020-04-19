@@ -8,6 +8,10 @@ import java.net.*;
 
 public class UDPListener extends Thread {
     @Override
+    /**
+     * Constantly listens to UDP requests.
+     * When there is an incoming request, it generates a new thread to handle it.
+     */
     public void run() {
         try{
             // UDP parameters
