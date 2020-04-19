@@ -151,7 +151,7 @@ public class NodeClient {
 
     public void receiveMulticastReplyNS(JSONObject json, InetAddress nsIP) throws JSONException, IOException, InterruptedException {
         System.out.println("Received a reply of our discovery multicast message from the NamingServer.");
-        System.out.println("Connected to nameServer : "+nsIP.getHostName());
+        System.out.println("Connected to nameServer : "+nsIP.getAddress());
         NodeClient.nsIP = nsIP; //This will save the IP-address of the NS for later use
         if(json.getInt("amountOfNodes") == 0){
             nextID = Hashing.createHash(nodeName);
@@ -250,7 +250,8 @@ public class NodeClient {
             return null;
         }
         String hostName = nsIP.getHostAddress();
-        String url ="http://"+hostName+":8080/fileRequest?filename=" + filename;
+        //String url ="http://"+hostName+":8080/fileRequest?filename=" + filename;
+        String url ="http://host2:8080/fileRequest?filename=" + filename;
         HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
 
         connection.setRequestMethod("GET");
