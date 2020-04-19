@@ -151,7 +151,8 @@ public class NodeClient {
 
     public void receiveMulticastReplyNS(JSONObject json, InetAddress nsIP) throws JSONException, IOException, InterruptedException {
         System.out.println("Received a reply of our discovery multicast message from the NamingServer.");
-        this.nsIP = nsIP; //This will save the IP-address of the NS for later use
+        System.out.println("Connected to nameServer : "+nsIP.getHostName());
+        NodeClient.nsIP = nsIP; //This will save the IP-address of the NS for later use
         if(json.getInt("amountOfNodes") == 0){
             nextID = Hashing.createHash(nodeName);
             previousID = Hashing.createHash(nodeName);
