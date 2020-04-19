@@ -40,6 +40,7 @@ public class NodeClient {
      * @param nodeIP is the IP-address of the node that wants to join
      */
     public void multicastHandler(String receivedNodeName, InetAddress nodeIP) throws IOException, JSONException {
+        System.out.println("Received a multicast from another Node on the network, processing message ...");
         Integer hash = hashing.createHash(receivedNodeName);
 
         try {
@@ -58,6 +59,7 @@ public class NodeClient {
             json.put("currentID", currentID);
             json.put("newNodeID", nextID);
             sendUnicastMessage(nodeIP, json);
+            System.out.println("NextID changed to: " + nextID + " Sending unicast message..");
         }
         if(previousID< hash && hash<currentID){
             previousID = hash;
@@ -66,6 +68,7 @@ public class NodeClient {
             json.put("currentID", currentID);
             json.put("newNodeID", previousID);
             sendUnicastMessage(nodeIP, json);
+            System.out.println("PreviousID changed to: " + previousID + " Sending unicast message..");
         }
         // here we will look if the currentID node is the node with the highest or lowes ID number
         if(currentID>=nextID){ // there is only one node, or multiple nodes but you have the highest ID number because next is lower.
@@ -76,6 +79,7 @@ public class NodeClient {
                 json.put("currentID", currentID);
                 json.put("newNodeID", nextID);
                 sendUnicastMessage(nodeIP, json);
+                System.out.println("NextID changed to: " + nextID + " Sending unicast message..");
             }
         }
         if(currentID<=previousID){ // you have the lowest nodeID on the network.
@@ -85,6 +89,7 @@ public class NodeClient {
                 json.put("isEndNode", Boolean.TRUE);
                 json.put("currentID", currentID);
                 json.put("newNodeID", previousID);
+                System.out.println("PreviousID changed to: " + previousID + " Sending unicast message..");
                 sendUnicastMessage(nodeIP, json);
             }
         }
@@ -122,6 +127,7 @@ public class NodeClient {
      * @throws JSONException
      */
     public void receiveMulticastReplyNode(JSONObject json) throws JSONException{
+        System.out.println("Received a reply of our discovery multicast message from another node.");
         Boolean isEndNode = json.getBoolean("isEndNode");
         Integer currentID = json.getInt("currentID"); // The other ones ID
         Integer newNodeID = json.getInt("newNodeID"); // Your own ID
@@ -142,6 +148,7 @@ public class NodeClient {
     }
 
     public void receiveMulticastReplyNS(JSONObject json, InetAddress nsIP) throws JSONException, IOException, InterruptedException {
+        System.out.println("Received a reply of our discovery multicast message from the NamingServer.");
         this.nsIP = nsIP; //This will save the IP-address of the NS for later use
         if(json.getInt("amountOfNodes") == 0){
             nextID = hashing.createHash(nodeName);
@@ -181,13 +188,13 @@ public class NodeClient {
         JSONObject obj = new JSONObject();
         obj.put("typeOfMsg","Discovery");
         obj.put("name", nodeName);
-        obj.put("ip", InetAddress.getLocalHost());
         MulticastSocket ms = new MulticastSocket(6012);
         ms.getLocalSocketAddress();
         ms.joinGroup(MCgroup);
         byte[] contents = obj.toString().getBytes();
         DatagramPacket packet = new DatagramPacket(contents,contents.length, MCgroup, 6012);
         ms.send(packet);
+        System.out.println("Multicast bootstrap message is sent.");
     }
 
     public void shutdown () throws IOException, JSONException {
