@@ -278,6 +278,33 @@ public class NodeClient {
         return null;
     }
 
+    public void getNeighbours() throws IOException, InterruptedException {
+        Integer h = Hashing.createHash(nodeName);
+        String name = nsIP.getHostAddress();
+        JSONObject json2 = new JSONObject();
+        json2.put("typeOfMsg","shutdown");
+        json2.put("updateID",nextID);
+        System.out.println("Requesting neighbours from NamingServer...");
+        URL url = new URL ("http://" +name+ ":8080/neighbourRequest?nodeID="+h);
+        HttpURLConnection con = (HttpURLConnection) url.openConnection();
+        con.setRequestMethod("GET");
+        BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+        String inputLine;
+        StringBuilder content = new StringBuilder();
+        while ((inputLine = in.readLine()) != null) {
+            content.append(inputLine);
+        }
+        in.close();
+        con.disconnect();
+        System.out.println("Message received from NamingServer!");
+        JSONObject j = new JSONObject(content.toString());
+        System.out.println("Sending Unicast message to neighbours..");
+        InetAddress previousNeighbor = (InetAddress) j.get("previousNode");
+        sendUnicastMessage(previousNeighbor,json2);
+        json2.put("updateID",previousID);
+        InetAddress nextNeighbor = (InetAddress) j.get("nextNode");
+        System.out.println("Previous NodeID is: "+previousID+"\n Next NodeID is: "+nextID);
+    }
     public void printNeighbours(){
         System.out.println("Previous NodeID is: "+previousID+"\n Next NodeID is: "+nextID);
     }
