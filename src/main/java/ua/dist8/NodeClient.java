@@ -295,6 +295,9 @@ public class NodeClient {
         return null;
     }
 
+    /**
+     * Print the neighbours of this node.
+     */
     public void printNeighbours(){
         System.out.println("Previous NodeID is: "+previousID+"\n Next NodeID is: "+nextID);
     }
