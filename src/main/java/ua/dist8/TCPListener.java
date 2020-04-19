@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.concurrent.Semaphore;
 
 public class TCPListener extends Thread {
     @Override
@@ -15,7 +16,7 @@ public class TCPListener extends Thread {
         try {
             //Initialize socket
             ServerSocket serverSocket = new ServerSocket(5000);
-            System.out.println("Server Started ....");
+            System.out.println("Listening to port 5000....");
             while (true){
                 Socket clientSocket = serverSocket.accept();
                 TCPThreadHandler tcpThreadHandler = new TCPThreadHandler(clientSocket);
