@@ -15,7 +15,7 @@ public class NodeClient {
     private String nodeName;
     private Integer nextID;
     private Integer previousID;
-    private InetAddress nsIP;
+    static private InetAddress nsIP;
 
     /**
      * Constructor for the NodeClient class
