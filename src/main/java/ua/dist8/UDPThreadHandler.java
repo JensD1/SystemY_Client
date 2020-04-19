@@ -28,7 +28,7 @@ public class UDPThreadHandler extends Thread{
             JSONObject json = new JSONObject(dataString);
             if(json.getString("typeOfMsg").equals("Discovery")) {
                 NodeClient nodeClient = new NodeClient();
-                nodeClient.multicastHandler(json.getString("name"), (InetAddress)json.get("ip"));
+                nodeClient.multicastHandler(json.getString("name"), datagramPacket.getAddress());
             }
         } catch (JSONException | IOException e) {
             e.printStackTrace();
