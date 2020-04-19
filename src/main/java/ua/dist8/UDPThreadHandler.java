@@ -5,7 +5,7 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
-import java.net.InetAddress;
+
 
 public class UDPThreadHandler extends Thread{
     private DatagramPacket datagramPacket;

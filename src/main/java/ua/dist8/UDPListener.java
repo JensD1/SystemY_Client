@@ -1,9 +1,5 @@
 package ua.dist8;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.IOException;
 import java.net.*;
 
 public class UDPListener extends Thread {

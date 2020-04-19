@@ -4,15 +4,14 @@ import org.json.JSONObject;
 
 import java.io.*;
 import java.net.InetAddress;
-import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
 import java.net.*;
+import java.util.Scanner;
 import java.util.concurrent.Semaphore;
 
 public class NodeClient {
-    private Hashing hashing;
     private String nodeName;
     private Integer nextID;
     private Integer previousID;
@@ -23,7 +22,6 @@ public class NodeClient {
      * Constructor for the NodeClient class
      */
     NodeClient(){
-        hashing = new Hashing();
         try {
             nodeName = InetAddress.getLocalHost().getHostName();
         } catch (UnknownHostException e) {
@@ -43,7 +41,7 @@ public class NodeClient {
      */
     public void multicastHandler(String receivedNodeName, InetAddress nodeIP) throws IOException, JSONException, InterruptedException {
         System.out.println("Received a multicast from another Node on the network, processing message ...");
-        Integer hash = hashing.createHash(receivedNodeName);
+        Integer hash = Hashing.createHash(receivedNodeName);
 
         try {
             nodeName = InetAddress.getLocalHost().getHostName();
@@ -51,7 +49,7 @@ public class NodeClient {
             e.printStackTrace();
         }
 
-        Integer currentID = hashing.createHash(nodeName);
+        Integer currentID = Hashing.createHash(nodeName);
         JSONObject json = new JSONObject();
         json.put("typeOfMsg","multicastReply");
         if(currentID<hash && hash<nextID){
@@ -154,8 +152,8 @@ public class NodeClient {
         System.out.println("Received a reply of our discovery multicast message from the NamingServer.");
         this.nsIP = nsIP; //This will save the IP-address of the NS for later use
         if(json.getInt("amountOfNodes") == 0){
-            nextID = hashing.createHash(nodeName);
-            previousID = hashing.createHash(nodeName);
+            nextID = Hashing.createHash(nodeName);
+            previousID = Hashing.createHash(nodeName);
         }
         //todo Dit van hieronder aanpassen en zorgen dat de server zo'n -1 bericht stuurt, pas ook
         //todo de andere 2 nodes aan die de multicast hebben aangekregen, maar niet weten dat je het netwerk
@@ -203,7 +201,7 @@ public class NodeClient {
     public void shutdown () throws IOException, JSONException, InterruptedException {
         //That is the part of the NS:
         JSONObject json = new JSONObject();
-        Integer h = hashing.createHash(nodeName);
+        Integer h = Hashing.createHash(nodeName);
         json.put("typeOfNode", "CL");
         json.put("typeOfMsg","shutdown");
         json.put("ID",h);
@@ -231,5 +229,27 @@ public class NodeClient {
         json2.put("updateID",previousID);
         InetAddress nextNeighbor = (InetAddress) j.get("nextNode");
         sendUnicastMessage(nextNeighbor,json2);
+    }
+    public String sendRESTRequest(String filename) throws IOException {
+        HttpURLConnection connection = (HttpURLConnection) new URL("http://localhost:8080/fileRequest?filename=" + filename).openConnection();
+
+        connection.setRequestMethod("GET");
+
+        int responseCode = connection.getResponseCode();
+        if(responseCode == 200){ //connection successful // Niet zeker wat ik hier moet zetten.
+            String response = "";
+            Scanner scanner = new Scanner(connection.getInputStream());
+            while(scanner.hasNextLine()){
+                response += scanner.nextLine();
+                response += "\n";
+            }
+            scanner.close();
+            // returns a string
+            return response;
+        }
+        System.out.println("Request failed!");
+
+        // an error happened
+        return null;
     }
 }

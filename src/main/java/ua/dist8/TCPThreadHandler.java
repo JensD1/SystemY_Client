@@ -1,10 +1,8 @@
 package ua.dist8;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.w3c.dom.Node;
 
-import java.io.IOException;
+import org.json.JSONObject;
+
 import java.io.InputStream;
 import java.net.Socket;
 
