@@ -9,6 +9,7 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 
 import java.net.*;
+import java.util.concurrent.Semaphore;
 
 public class NodeClient {
     private Hashing hashing;
@@ -16,6 +17,7 @@ public class NodeClient {
     private Integer nextID;
     private Integer previousID;
     static private InetAddress nsIP;
+    static private Semaphore sem = new Semaphore(1);
 
     /**
      * Constructor for the NodeClient class
@@ -39,7 +41,7 @@ public class NodeClient {
      * @param receivedNodeName is the name of the node that wants to join
      * @param nodeIP is the IP-address of the node that wants to join
      */
-    public void multicastHandler(String receivedNodeName, InetAddress nodeIP) throws IOException, JSONException {
+    public void multicastHandler(String receivedNodeName, InetAddress nodeIP) throws IOException, JSONException, InterruptedException {
         System.out.println("Received a multicast from another Node on the network, processing message ...");
         Integer hash = hashing.createHash(receivedNodeName);
 
@@ -107,14 +109,15 @@ public class NodeClient {
      * @throws IOException the exception to handle the outputStream exceptions
      * @throws JSONException the exception to handle the JSON exceptions
      */
-    public void sendUnicastMessage(InetAddress toSend,JSONObject json) throws IOException, JSONException {
+    public void sendUnicastMessage(InetAddress toSend,JSONObject json) throws IOException, JSONException, InterruptedException {
+        sem.acquire();
         Socket socket = new Socket(toSend, 5000);
         OutputStream outputStream = socket.getOutputStream();
         outputStream.write(json.toString().getBytes());
         outputStream.flush();
         outputStream.close();
         socket.close();
-
+        sem.release();
     }
 
     //todo comment verbeteren
@@ -197,7 +200,7 @@ public class NodeClient {
         System.out.println("Multicast bootstrap message is sent.");
     }
 
-    public void shutdown () throws IOException, JSONException {
+    public void shutdown () throws IOException, JSONException, InterruptedException {
         //That is the part of the NS:
         JSONObject json = new JSONObject();
         Integer h = hashing.createHash(nodeName);

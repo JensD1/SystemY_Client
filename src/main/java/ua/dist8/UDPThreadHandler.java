@@ -30,7 +30,7 @@ public class UDPThreadHandler extends Thread{
                 NodeClient nodeClient = new NodeClient();
                 nodeClient.multicastHandler(json.getString("name"), datagramPacket.getAddress());
             }
-        } catch (JSONException | IOException e) {
+        } catch (JSONException | IOException | InterruptedException e) {
             e.printStackTrace();
         }
     }
