@@ -14,6 +14,10 @@ public class TCPThreadHandler extends Thread {
     }
 
     @Override
+    /***
+     * Checks if packet concerns shutdown.
+     * If so, it calls the method to remove this node from the hashmap.
+     */
     public void run() {
         try {
             InputStream clientInput = clientSocket.getInputStream();

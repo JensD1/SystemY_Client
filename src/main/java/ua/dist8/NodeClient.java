@@ -119,12 +119,12 @@ public class NodeClient {
         sem.release();
     }
 
-    //todo comment verbeteren
     /**
-     *  Once a multicast message is sent, the node that wants to access the network needs to listen to all responses.
-     *  In the case that this is the first node, there will be only one message from the NamingServer, otherwise
-     *  there will be 3 messages. 1 from the NamingServer and 2 from the other clients.
-     *  In this method the node that wants to access the network will listen en see where in the network it belongs.
+     *  This function will run after this node has sent a multicast to receive the responses of other nodes and the naming server in the network
+     * @param json JSON object that will be transmitted, that contains:
+     *         "isEndNode"
+     *         "currentID"
+     *         "newNodeID"
      * @throws Exception
      * @throws JSONException
      */
@@ -149,6 +149,15 @@ public class NodeClient {
         }
     }
 
+    /***
+     * This function will run after this node has sent a multicast to receive the response of the naming server in the network
+     * @param json JSON object that will be transmitted, that contains:
+     *             "amountOfNodes"
+     * @param nsIP is the IP-address of the naming server
+     * @throws JSONException
+     * @throws IOException
+     * @throws InterruptedException
+     */
     public void receiveMulticastReplyNS(JSONObject json, InetAddress nsIP) throws JSONException, IOException, InterruptedException {
         System.out.println("Received a reply of our discovery multicast message from the NamingServer.");
         System.out.println("Connected to nameServer : "+nsIP.getAddress());
@@ -167,6 +176,11 @@ public class NodeClient {
 //        }
     }
 
+    /***
+     * This function will be called when one of the node's neighbors is preparing to shutdown itself
+     * @param json is a JSONObject containing the to be updated next/previous nodeID
+     * @throws JSONException
+     */
     public void receivedShutdown(JSONObject json) throws JSONException{
 
         Integer updateID = json.getInt("updateID");
@@ -200,6 +214,14 @@ public class NodeClient {
         System.out.println("Multicast bootstrap message is sent.");
     }
 
+    /***
+     * This function will run when this node wants to shutdown itself, sending three messages in total to:
+     * Naming server
+     * Previous neighbor
+     * Next Neighbor
+     * @throws IOException
+     * @throws JSONException
+     */
     public void shutdown () throws IOException, JSONException, InterruptedException {
         //That is the part of the NS:
         System.out.println("Shutting down client...\nSending shutdown message to server and neighbours...");
@@ -278,6 +300,7 @@ public class NodeClient {
         return null;
     }
 
+
     public void getNeighbours() throws IOException, InterruptedException {
         Integer h = Hashing.createHash(nodeName);
         String name = nsIP.getHostAddress();
@@ -305,6 +328,11 @@ public class NodeClient {
         InetAddress nextNeighbor = (InetAddress) j.get("nextNode");
         System.out.println("Previous NodeID is: "+previousID+"\n Next NodeID is: "+nextID);
     }
+
+    /**
+     * Print the neighbours of this node.
+     */
+
     public void printNeighbours(){
         System.out.println("Previous NodeID is: "+previousID+"\n Next NodeID is: "+nextID);
     }
