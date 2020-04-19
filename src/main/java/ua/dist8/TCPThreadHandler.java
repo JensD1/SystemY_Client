@@ -19,7 +19,7 @@ public class TCPThreadHandler extends Thread {
     public void run() {
         try {
             InputStream clientInput = clientSocket.getInputStream();
-            byte[] contents = new byte[10000]; // pas dit nog aan !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            byte[] contents = new byte[10000]; // todo pas mogelijks aan
             if( clientInput.read(contents) != -1) { // the message is not empty.
                 String message = new String(contents);
                 JSONObject json = new JSONObject(message);

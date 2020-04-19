@@ -1,5 +1,4 @@
 package ua.dist8;
-import com.sun.org.apache.xpath.internal.operations.Bool;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -142,12 +141,20 @@ public class NodeClient {
         }
     }
 
-    public void receiveMulticastReplyNS(JSONObject json, InetAddress nsIP) throws JSONException{
+    public void receiveMulticastReplyNS(JSONObject json, InetAddress nsIP) throws JSONException, IOException, InterruptedException {
         this.nsIP = nsIP; //This will save the IP-address of the NS for later use
-        if(json.getInt("amountOfNodes") <= 0){
+        if(json.getInt("amountOfNodes") == 0){
             nextID = hashing.createHash(nodeName);
             previousID = hashing.createHash(nodeName);
         }
+        //todo Dit van hieronder aanpassen en zorgen dat de server zo'n -1 bericht stuurt, pas ook
+        //todo de andere 2 nodes aan die de multicast hebben aangekregen, maar niet weten dat je het netwerk
+        //todo niet hebt kunnen joinen.
+//        if(json.getInt("amountOfNodes") < 0){
+//            System.out.println("Unable to enter the network, we will try again after 1 sec...");
+//            Thread.sleep(1000);
+//            multicast();
+//        }
     }
 
     public void receivedShutdown(JSONObject json) throws JSONException{
