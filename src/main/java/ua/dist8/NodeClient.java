@@ -249,11 +249,13 @@ public class NodeClient {
             return null;
         }
         String hostName = nsIP.getHostName();
-        HttpURLConnection connection = (HttpURLConnection) new URL("http://"+hostName+":8080/fileRequest?filename=" + filename).openConnection();
+        String url ="http://"+hostName+":8080/fileRequest?filename=" + filename;
+        HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
 
         connection.setRequestMethod("GET");
 
         int responseCode = connection.getResponseCode();
+        System.out.println("Connecting to " + url +"Response code = "+ responseCode);
         if(responseCode == 200){ //connection successful // Niet zeker wat ik hier moet zetten.
             String response = "";
             Scanner scanner = new Scanner(connection.getInputStream());
@@ -265,6 +267,7 @@ public class NodeClient {
             // returns a string
             JSONObject jsonResponse = new JSONObject(response);
             String ip = jsonResponse.getString("inetAddress");
+            System.out.println("Hostname of file is: "+ip);
             return InetAddress.getByName(ip);
         }
         System.out.println("Request failed!");
