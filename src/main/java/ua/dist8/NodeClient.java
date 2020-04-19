@@ -1,4 +1,5 @@
 package ua.dist8;
+import netscape.javascript.JSObject;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -230,8 +231,16 @@ public class NodeClient {
         InetAddress nextNeighbor = (InetAddress) j.get("nextNode");
         sendUnicastMessage(nextNeighbor,json2);
     }
-    public String sendRESTRequest(String filename) throws IOException {
-        HttpURLConnection connection = (HttpURLConnection) new URL("http://localhost:8080/fileRequest?filename=" + filename).openConnection();
+
+    /**
+     * REST request to get InetAddress of file location.
+     * @param filename
+     * @return
+     * @throws IOException
+     */
+    public InetAddress fileRequest(String filename) throws IOException {
+        String hostName = nsIP.getHostName();
+        HttpURLConnection connection = (HttpURLConnection) new URL("http://"+hostName+":8080/fileRequest?filename=" + filename).openConnection();
 
         connection.setRequestMethod("GET");
 
@@ -245,7 +254,9 @@ public class NodeClient {
             }
             scanner.close();
             // returns a string
-            return response;
+            JSONObject jsonResponse = new JSONObject(response);
+            String ip = jsonResponse.getString("inetAddress");
+            return InetAddress.getByName(ip);
         }
         System.out.println("Request failed!");
 
