@@ -71,7 +71,6 @@ public class NodeApplication {
 
                 default:
                     System.out.println("Invalid command!\n");
-                    System.out.println("Type !help for a list of commands: ");
                     break;
             }
         }
