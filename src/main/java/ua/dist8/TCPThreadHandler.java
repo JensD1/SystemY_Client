@@ -36,8 +36,7 @@ public class TCPThreadHandler extends Thread {
                         if (json.getString("typeOfNode").equals("NS")) {
                             nodeClient.receiveMulticastReplyNS(json, clientSocket.getInetAddress());
                         } else if (json.getString("typeOfNode").equals("CL")) {
-                            nodeClient.receiveMulticastReplyNS(json, clientSocket.getInetAddress());
-                            //nodeClient.receiveMulticastReplyNode(json);
+                            nodeClient.receiveMulticastReplyNode(json);
                         }
                         break;
                     }

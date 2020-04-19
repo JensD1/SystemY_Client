@@ -129,7 +129,7 @@ public class NodeClient {
      * @throws JSONException
      */
     public void receiveMulticastReplyNode(JSONObject json) throws JSONException{
-        System.out.println("Received a reply of our discovery multicast message from another banaan.");
+        System.out.println("Received a reply of our discovery multicast message from another message.");
         Boolean isEndNode = json.getBoolean("isEndNode");
         Integer currentID = json.getInt("currentID"); // The other ones ID
         Integer newNodeID = json.getInt("newNodeID"); // Your own ID
