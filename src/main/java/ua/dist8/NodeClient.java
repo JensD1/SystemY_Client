@@ -201,18 +201,20 @@ public class NodeClient {
 
     public void shutdown () throws IOException, JSONException, InterruptedException {
         //That is the part of the NS:
+        System.out.println("Shutting down client...\nSending shutdown message to server and neighbours...");
         JSONObject json = new JSONObject();
         Integer h = Hashing.createHash(nodeName);
         json.put("typeOfNode", "CL");
         json.put("typeOfMsg","shutdown");
         json.put("ID",h);
         sendUnicastMessage(nsIP,json);
-
+        System.out.println("Message sent to NamingServer...");
         //This part is for the neighboring nodes:
         String name = nsIP.getHostName();
         JSONObject json2 = new JSONObject();
         json2.put("typeOfMsg","shutdown");
         json2.put("updateID",nextID);
+        System.out.println("Requesting neighbours from NamingServer...");
         URL url = new URL ("http://" +name+ ":8080/neighbourRequest?nodeID="+h);
         HttpURLConnection con = (HttpURLConnection) url.openConnection();
         con.setRequestMethod("GET");
@@ -224,12 +226,15 @@ public class NodeClient {
         }
         in.close();
         con.disconnect();
+        System.out.println("Message received from NamingServer!");
         JSONObject j = new JSONObject(content.toString());
+        System.out.println("Sending Unicast message to neighbours..");
         InetAddress previousNeighbor = (InetAddress) j.get("previousNode");
         sendUnicastMessage(previousNeighbor,json2);
         json2.put("updateID",previousID);
         InetAddress nextNeighbor = (InetAddress) j.get("nextNode");
         sendUnicastMessage(nextNeighbor,json2);
+        System.out.println("Succesfuly disconnected from NamingServer!");
     }
 
     /**
@@ -239,6 +244,10 @@ public class NodeClient {
      * @throws IOException
      */
     public InetAddress fileRequest(String filename) throws IOException {
+        if (nsIP == null){
+            System.out.println("Not connected to any NameServer, Please use !connect before requesting a file");
+            return null;
+        }
         String hostName = nsIP.getHostName();
         HttpURLConnection connection = (HttpURLConnection) new URL("http://"+hostName+":8080/fileRequest?filename=" + filename).openConnection();
 
@@ -262,5 +271,9 @@ public class NodeClient {
 
         // an error happened
         return null;
+    }
+
+    public void printNeighbours(){
+        System.out.println("Previous NodeID is: "+previousID+"\n Next NodeID is: "+nextID);
     }
 }
