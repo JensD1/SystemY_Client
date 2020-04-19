@@ -7,7 +7,7 @@ import java.net.InetAddress;
 import java.util.Scanner;
 
 public class NodeApplication {
-    public static void main(String[] args) throws IOException, JSONException {
+    public static void main(String[] args) throws IOException, JSONException, InterruptedException {
         boolean running = true;
         NodeClient nodeClient = new NodeClient();
 
@@ -24,7 +24,7 @@ public class NodeApplication {
             String input = scanner.nextLine();
             switch(input){
                 case "!help":
-                    System.out.println("The available commands are:\n!RequestFilePing\n !requestFile\n !requestFile\n !connect\n !disconnect\n !checkNeighbours \n exit");
+                    System.out.println("The available commands are:\n!RequestFilePing\n!requestFile\n!printNeighbours\n!connect\n!disconnect\n!!loadNeighboursFromNS \n!exit");
                     break;
                 case "!requestFilePing":
                     System.out.println("Give the name of the requested file: ");
@@ -38,6 +38,8 @@ public class NodeApplication {
                     System.out.println("Give the name of the requested file: ");
                     fileName = scanner.nextLine();
                     address = nodeClient.fileRequest(fileName);
+                    if (address == null)
+                        break;
                     System.out.println("File is located at host" + address.getHostName());
                     break;
                 case "!connect":
@@ -51,8 +53,11 @@ public class NodeApplication {
                     }
                     System.out.println("try catch print");
                     break;
-                case "!checkNeighbours":
+                case "!printNeighbours":
                     nodeClient.printNeighbours();
+                    break;
+                case "!loadNeighboursFromNS":
+                    nodeClient.getNeighbours();
                     break;
                 case "!exit":
                     try {

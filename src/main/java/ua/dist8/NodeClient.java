@@ -13,9 +13,9 @@ import java.util.Scanner;
 import java.util.concurrent.Semaphore;
 
 public class NodeClient {
-    private String nodeName;
-    private Integer nextID;
-    private Integer previousID;
+    static private String nodeName;
+    static private Integer nextID;
+    static private Integer previousID;
     static private InetAddress nsIP;
     static private Semaphore sem = new Semaphore(1);
 
@@ -129,7 +129,7 @@ public class NodeClient {
      * @throws JSONException
      */
     public void receiveMulticastReplyNode(JSONObject json) throws JSONException{
-        System.out.println("Received a reply of our discovery multicast message from another node.");
+        System.out.println("Received a reply of our discovery multicast message from another message.");
         Boolean isEndNode = json.getBoolean("isEndNode");
         Integer currentID = json.getInt("currentID"); // The other ones ID
         Integer newNodeID = json.getInt("newNodeID"); // Your own ID
@@ -160,7 +160,8 @@ public class NodeClient {
      */
     public void receiveMulticastReplyNS(JSONObject json, InetAddress nsIP) throws JSONException, IOException, InterruptedException {
         System.out.println("Received a reply of our discovery multicast message from the NamingServer.");
-        this.nsIP = nsIP; //This will save the IP-address of the NS for later use
+        System.out.println("Connected to nameServer : "+nsIP.getAddress());
+        NodeClient.nsIP = nsIP; //This will save the IP-address of the NS for later use
         if(json.getInt("amountOfNodes") == 0){
             nextID = Hashing.createHash(nodeName);
             previousID = Hashing.createHash(nodeName);
@@ -232,7 +233,7 @@ public class NodeClient {
         sendUnicastMessage(nsIP,json);
         System.out.println("Message sent to NamingServer...");
         //This part is for the neighboring nodes:
-        String name = nsIP.getHostName();
+        String name = nsIP.getHostAddress();
         JSONObject json2 = new JSONObject();
         json2.put("typeOfMsg","shutdown");
         json2.put("updateID",nextID);
@@ -270,12 +271,15 @@ public class NodeClient {
             System.out.println("Not connected to any NameServer, Please use !connect before requesting a file");
             return null;
         }
-        String hostName = nsIP.getHostName();
-        HttpURLConnection connection = (HttpURLConnection) new URL("http://"+hostName+":8080/fileRequest?filename=" + filename).openConnection();
+        String hostName = nsIP.getHostAddress();
+        //String url ="http://"+hostName+":8080/fileRequest?filename=" + filename;
+        String url ="http://host2:8080/fileRequest?filename=" + filename;
+        HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
 
         connection.setRequestMethod("GET");
 
         int responseCode = connection.getResponseCode();
+        System.out.println("Connecting to " + url +"Response code = "+ responseCode);
         if(responseCode == 200){ //connection successful // Niet zeker wat ik hier moet zetten.
             String response = "";
             Scanner scanner = new Scanner(connection.getInputStream());
@@ -287,6 +291,7 @@ public class NodeClient {
             // returns a string
             JSONObject jsonResponse = new JSONObject(response);
             String ip = jsonResponse.getString("inetAddress");
+            System.out.println("Hostname of file is: "+ip);
             return InetAddress.getByName(ip);
         }
         System.out.println("Request failed!");
@@ -295,9 +300,39 @@ public class NodeClient {
         return null;
     }
 
+
+    public void getNeighbours() throws IOException, InterruptedException {
+        Integer h = Hashing.createHash(nodeName);
+        String name = nsIP.getHostAddress();
+        JSONObject json2 = new JSONObject();
+        json2.put("typeOfMsg","shutdown");
+        json2.put("updateID",nextID);
+        System.out.println("Requesting neighbours from NamingServer...");
+        URL url = new URL ("http://" +name+ ":8080/neighbourRequest?nodeID="+h);
+        HttpURLConnection con = (HttpURLConnection) url.openConnection();
+        con.setRequestMethod("GET");
+        BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+        String inputLine;
+        StringBuilder content = new StringBuilder();
+        while ((inputLine = in.readLine()) != null) {
+            content.append(inputLine);
+        }
+        in.close();
+        con.disconnect();
+        System.out.println("Message received from NamingServer!");
+        JSONObject j = new JSONObject(content.toString());
+        System.out.println("Sending Unicast message to neighbours..");
+        InetAddress previousNeighbor = (InetAddress) j.get("previousNode");
+        sendUnicastMessage(previousNeighbor,json2);
+        json2.put("updateID",previousID);
+        InetAddress nextNeighbor = (InetAddress) j.get("nextNode");
+        System.out.println("Previous NodeID is: "+previousID+"\n Next NodeID is: "+nextID);
+    }
+
     /**
      * Print the neighbours of this node.
      */
+
     public void printNeighbours(){
         System.out.println("Previous NodeID is: "+previousID+"\n Next NodeID is: "+nextID);
     }
