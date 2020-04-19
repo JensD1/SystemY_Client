@@ -209,13 +209,13 @@ public class NodeClient {
         con.setRequestMethod("GET");
         BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
         String inputLine;
-        StringBuffer content = new StringBuffer();
+        StringBuilder content = new StringBuilder();
         while ((inputLine = in.readLine()) != null) {
             content.append(inputLine);
         }
         in.close();
         con.disconnect();
-        JSONObject j = new JSONObject(inputLine);
+        JSONObject j = new JSONObject(content.toString());
         InetAddress previousNeighbor = (InetAddress) j.get("previousNode");
         sendUnicastMessage(previousNeighbor,json2);
         json2.put("updateID",previousID);
