@@ -211,7 +211,7 @@ public class NodeClient {
         sendUnicastMessage(nsIP,json);
         System.out.println("Message sent to NamingServer...");
         //This part is for the neighboring nodes:
-        String name = nsIP.getHostName();
+        String name = nsIP.getHostAddress();
         JSONObject json2 = new JSONObject();
         json2.put("typeOfMsg","shutdown");
         json2.put("updateID",nextID);
@@ -249,7 +249,7 @@ public class NodeClient {
             System.out.println("Not connected to any NameServer, Please use !connect before requesting a file");
             return null;
         }
-        String hostName = nsIP.getHostName();
+        String hostName = nsIP.getHostAddress();
         String url ="http://"+hostName+":8080/fileRequest?filename=" + filename;
         HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
 
