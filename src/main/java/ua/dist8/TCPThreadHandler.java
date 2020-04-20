@@ -28,7 +28,7 @@ public class TCPThreadHandler extends Thread {
 
                 switch (json.getString("typeOfMsg")) {
                     case "shutdown": {
-                        NodeClient nodeClient = new NodeClient();
+                        NodeClient nodeClient = NodeClient.getInstance();
                         nodeClient.shutdown();
                         break;
                     }
@@ -36,7 +36,7 @@ public class TCPThreadHandler extends Thread {
                         //todo
                         break;
                     case "multicastReply": {
-                        NodeClient nodeClient = new NodeClient();
+                        NodeClient nodeClient = NodeClient.getInstance();
                         if (json.getString("typeOfNode").equals("NS")) {
                             nodeClient.receiveMulticastReplyNS(json, clientSocket.getInetAddress());
                         } else if (json.getString("typeOfNode").equals("CL")) {
