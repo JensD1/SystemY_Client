@@ -24,7 +24,7 @@ public class NodeApplication {
             String input = scanner.nextLine();
             switch(input){
                 case "!help":
-                    System.out.println("The available commands are:\n!RequestFilePing\n!requestFile\n!printNeighbours\n!connect\n!disconnect\n!!loadNeighboursFromNS \n!exit");
+                    System.out.println("The available commands are:\n!RequestFilePing\n!requestFile\n!printNeighbours\n!connect\n!disconnect\n!loadNeighboursFromNS \n!exit");
                     break;
                 case "!requestFilePing":
                     System.out.println("Give the name of the requested file: ");
@@ -71,7 +71,6 @@ public class NodeApplication {
 
                 default:
                     System.out.println("Invalid command!\n");
-                    System.out.println("Type !help for a list of commands: ");
                     break;
             }
         }
