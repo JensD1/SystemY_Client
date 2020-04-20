@@ -129,7 +129,7 @@ public class NodeClient {
      * @throws JSONException
      */
     public void receiveMulticastReplyNode(JSONObject json) throws JSONException{
-        System.out.println("Received a reply of our discovery multicast message from another message.");
+        System.out.println("Received a reply of our discovery multicast message from another node.");
         Boolean isEndNode = json.getBoolean("isEndNode");
         Integer currentID = json.getInt("currentID"); // The other ones ID
         Integer newNodeID = json.getInt("newNodeID"); // Your own ID
@@ -160,7 +160,7 @@ public class NodeClient {
      */
     public void receiveMulticastReplyNS(JSONObject json, InetAddress nsIP) throws JSONException, IOException, InterruptedException {
         System.out.println("Received a reply of our discovery multicast message from the NamingServer.");
-        System.out.println("Connected to nameServer : "+nsIP.getAddress());
+        System.out.println("Connected to nameServer : "+nsIP.getAddress());=
         NodeClient.nsIP = nsIP; //This will save the IP-address of the NS for later use
         if(json.getInt("amountOfNodes") == 0){
             nextID = Hashing.createHash(nodeName);
