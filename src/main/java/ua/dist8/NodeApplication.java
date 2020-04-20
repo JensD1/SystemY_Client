@@ -9,7 +9,7 @@ import java.util.Scanner;
 public class NodeApplication {
     public static void main(String[] args) throws IOException, JSONException {
         boolean running = true;
-        NodeClient nodeClient = new NodeClient();
+        NodeClient nodeClient = NodeClient.getInstance();
 
         TCPListener tcpListener = new TCPListener();
         UDPListener udpListener = new UDPListener();

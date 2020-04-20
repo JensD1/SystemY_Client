@@ -19,10 +19,12 @@ public class NodeClient {
     static private InetAddress nsIP;
     static private Semaphore sem = new Semaphore(1);
 
+    private static NodeClient nodeClient = new NodeClient();
+
     /**
      * Constructor for the NodeClient class
      */
-    NodeClient(){
+    private NodeClient(){
         try {
             nodeName = InetAddress.getLocalHost().getHostName();
         } catch (UnknownHostException e) {
@@ -30,6 +32,10 @@ public class NodeClient {
         }
         previousID = -1;
         nextID = -1;
+    }
+
+    public static NodeClient getInstance(){
+        return nodeClient;
     }
 
     /**
