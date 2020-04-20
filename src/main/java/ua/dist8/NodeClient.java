@@ -272,7 +272,8 @@ public class NodeClient {
             return null;
         }
         String hostName = nsIP.getHostAddress();
-        String url ="http://"+hostName+"/fileRequest?filename=" + filename;
+        String url ="http://"+hostName+":8080/fileRequest?filename=" + filename;
+        System.out.println("Trying to connect with "+url);
         //String url ="http://host2/fileRequest?filename=" + filename;
         HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
 
