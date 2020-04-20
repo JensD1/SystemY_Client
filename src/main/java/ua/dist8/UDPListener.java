@@ -20,8 +20,9 @@ public class UDPListener extends Thread {
                 byte[] buf = new byte[1000];
                 DatagramPacket datagramPacket = new DatagramPacket(buf, buf.length);
                 ms.receive(datagramPacket);
-                System.out.println("Packet received! Creating new thread to process the request.");
+
                 UDPThreadHandler thread = new UDPThreadHandler(datagramPacket); //send  the request to a separate thread
+                System.out.println("UDP Packet received! Creating new thread(ID= "+thread.getId()+") to process the request.");
                 thread.start();
             }
         }catch(Exception e){
