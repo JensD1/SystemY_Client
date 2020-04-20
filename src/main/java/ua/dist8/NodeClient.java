@@ -66,7 +66,7 @@ public class NodeClient {
             json.put("currentID", currentID);
             json.put("newNodeID", nextID);
             sendUnicastMessage(nodeIP, json);
-            System.out.println("NextID changed to: " + nextID + " Sending unicast message..");
+            System.out.println("NextID changed to: " + nextID + " Sending unicast message..\nHe is not an end node.");
         }
         if(previousID< hash && hash<currentID){
             previousID = hash;
@@ -75,7 +75,7 @@ public class NodeClient {
             json.put("currentID", currentID);
             json.put("newNodeID", previousID);
             sendUnicastMessage(nodeIP, json);
-            System.out.println("PreviousID changed to: " + previousID + " Sending unicast message..");
+            System.out.println("PreviousID changed to: " + previousID + " Sending unicast message..\nHe is not an end node.");
         }
         // here we will look if the currentID node is the node with the highest or lowes ID number
         if(currentID>=nextID){ // there is only one node, or multiple nodes but you have the highest ID number because next is lower.
@@ -86,7 +86,7 @@ public class NodeClient {
                 json.put("currentID", currentID);
                 json.put("newNodeID", nextID);
                 sendUnicastMessage(nodeIP, json);
-                System.out.println("NextID changed to: " + nextID + " Sending unicast message..");
+                System.out.println("NextID changed to: " + nextID + " Sending unicast message..\nHe is an end node.");
             }
         }
         if(currentID<=previousID){ // you have the lowest nodeID on the network.
@@ -96,7 +96,7 @@ public class NodeClient {
                 json.put("isEndNode", Boolean.TRUE);
                 json.put("currentID", currentID);
                 json.put("newNodeID", previousID);
-                System.out.println("PreviousID changed to: " + previousID + " Sending unicast message..");
+                System.out.println("PreviousID changed to: " + previousID + " Sending unicast message..\nHe is an end node.");
                 sendUnicastMessage(nodeIP, json);
             }
         }
@@ -137,20 +137,35 @@ public class NodeClient {
     public void receiveMulticastReplyNode(JSONObject json) throws JSONException{
         System.out.println("Received a reply of our discovery multicast message from another node.");
         Boolean isEndNode = json.getBoolean("isEndNode");
+        System.out.println("I became an end node.");
         Integer currentID = json.getInt("currentID"); // The other ones ID
+        System.out.println("Received a message from ID: " + currentID);
         Integer newNodeID = json.getInt("newNodeID"); // Your own ID
+        System.out.println("I have ID: " + newNodeID);
         if(!isEndNode) {
             if (currentID > newNodeID) {
                 nextID = currentID;
+                if(previousID.equals(newNodeID) || previousID.equals(-1)){
+                    previousID = currentID;
+                }
             } else {
                 previousID = currentID;
+                if(nextID.equals(newNodeID) || nextID.equals(-1)){
+                    nextID = currentID;
+                }
             }
         }
         else{
             if (currentID > newNodeID) {
                 previousID = currentID;
+                if(nextID.equals(newNodeID) || nextID.equals(-1)){
+                    nextID = currentID;
+                }
             } else {
                 nextID = currentID;
+                if(previousID.equals(newNodeID) || previousID.equals(-1)){
+                    previousID = currentID;
+                }
             }
         }
     }
@@ -347,6 +362,7 @@ public class NodeClient {
      */
 
     public void printNeighbours(){
-        System.out.println("Previous NodeID is: "+previousID+"\n Next NodeID is: "+nextID);
+        Integer myHash = Hashing.createHash(nodeName);
+        System.out.println("Hashing my own nodeName: "+nodeName+"\nMy own hash is: "+myHash+"\nPrevious NodeID is: "+previousID+"\n Next NodeID is: "+nextID);
     }
 }
