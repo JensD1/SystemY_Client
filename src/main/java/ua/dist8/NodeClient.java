@@ -145,15 +145,27 @@ public class NodeClient {
         if(!isEndNode) {
             if (currentID > newNodeID) {
                 nextID = currentID;
+                if(previousID.equals(newNodeID) || previousID.equals(-1)){
+                    previousID = currentID;
+                }
             } else {
                 previousID = currentID;
+                if(nextID.equals(newNodeID) || nextID.equals(-1)){
+                    nextID = currentID;
+                }
             }
         }
         else{
             if (currentID > newNodeID) {
                 previousID = currentID;
+                if(nextID.equals(newNodeID) || nextID.equals(-1)){
+                    nextID = currentID;
+                }
             } else {
                 nextID = currentID;
+                if(previousID.equals(newNodeID) || previousID.equals(-1)){
+                    previousID = currentID;
+                }
             }
         }
     }
