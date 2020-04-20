@@ -347,6 +347,7 @@ public class NodeClient {
      */
 
     public void printNeighbours(){
-        System.out.println("Previous NodeID is: "+previousID+"\n Next NodeID is: "+nextID);
+        Integer myHash = Hashing.createHash(nodeName);
+        System.out.println("Hashing my own nodeName: "+nodeName+"\nMy own hash is: "+myHash+"\nPrevious NodeID is: "+previousID+"\n Next NodeID is: "+nextID);
     }
 }
