@@ -1,5 +1,5 @@
 package ua.dist8;
-import netscape.javascript.JSObject;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -13,11 +13,11 @@ import java.util.Scanner;
 import java.util.concurrent.Semaphore;
 
 public class NodeClient {
-    static private String nodeName;
-    static private Integer nextID;
-    static private Integer previousID;
-    static private InetAddress nsIP;
-    static private Semaphore sem = new Semaphore(1);
+    private String nodeName;
+    private Integer nextID;
+    private Integer previousID;
+    private InetAddress nsIP;
+    private Semaphore sem = new Semaphore(1);
 
     private static NodeClient nodeClient = new NodeClient();
 
@@ -166,20 +166,26 @@ public class NodeClient {
      */
     public void receiveMulticastReplyNS(JSONObject json, InetAddress nsIP) throws JSONException, IOException, InterruptedException {
         System.out.println("Received a reply of our discovery multicast message from the NamingServer.");
-        System.out.println("Connected to nameServer : "+nsIP.getAddress());=
-        NodeClient.nsIP = nsIP; //This will save the IP-address of the NS for later use
-        if(json.getInt("amountOfNodes") == 0){
+        int amountOfNodes = (json.getInt("amountOfNodes"));
+        if(amountOfNodes >0){
+            System.out.println("Succesfully connected to " + nsIP.getHostName() + "\nThe amount of other nodes in the network = " + amountOfNodes);
+            this.nsIP = nsIP; //This will save the IP-address of the NS for later use
+        }
+        else if(amountOfNodes == 0){
+            System.out.println("I am the only node in the network, setting next/previous ID to myself");
+            this.nsIP = nsIP; //This will save the IP-address of the NS for later use
             nextID = Hashing.createHash(nodeName);
             previousID = Hashing.createHash(nodeName);
         }
-        //todo Dit van hieronder aanpassen en zorgen dat de server zo'n -1 bericht stuurt, pas ook
-        //todo de andere 2 nodes aan die de multicast hebben aangekregen, maar niet weten dat je het netwerk
-        //todo niet hebt kunnen joinen.
-//        if(json.getInt("amountOfNodes") < 0){
-//            System.out.println("Unable to enter the network, we will try again after 1 sec...");
-//            Thread.sleep(1000);
-//            multicast();
-//        }
+        else if(amountOfNodes == -1){
+            this.nsIP = nsIP; //This will save the IP-address of the NS for later use
+            System.out.println("I am already in the network!\nFetching my next and previous neighbour from NS! ");
+            //todo getNeighbours
+        }
+        else{
+            System.out.println("Something went wrong, please try again...");
+        }
+
     }
 
     /***
