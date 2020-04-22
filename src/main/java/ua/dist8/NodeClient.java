@@ -71,7 +71,7 @@ public class NodeClient {
             sendUnicastMessage(nodeIP, json);
             System.out.println("NextID changed to: " + nextID + " Sending unicast message..\nHe is not an end node.");
         }
-        if(previousID< hash && hash<currentID){
+        else if(previousID< hash && hash<currentID){
             previousID = hash;
             if (nextID == currentID){
                 nextID = hash;
@@ -84,7 +84,7 @@ public class NodeClient {
             System.out.println("PreviousID changed to: " + previousID + " Sending unicast message..\nHe is not an end node.");
         }
         // here we will look if the currentID node is the node with the highest or lowes ID number
-        if(currentID>=nextID){ // there is only one node, or multiple nodes but you have the highest ID number because next is lower.
+        else if(currentID>=nextID){ // there is only one node, or multiple nodes but you have the highest ID number because next is lower.
             if(currentID < hash){ // the new node has a higher ID
                 nextID = hash;
                 if (previousID == currentID){
@@ -98,7 +98,7 @@ public class NodeClient {
                 System.out.println("NextID changed to: " + nextID + " Sending unicast message..\nHe is an end node.");
             }
         }
-        if(currentID<=previousID){ // you have the lowest nodeID on the network.
+        else if(currentID<=previousID){ // you have the lowest nodeID on the network.
             if(currentID > hash){ // The new node has a lower ID.
                 previousID = hash;
                 if (nextID == currentID){
