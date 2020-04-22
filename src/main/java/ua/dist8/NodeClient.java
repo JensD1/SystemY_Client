@@ -30,8 +30,8 @@ public class NodeClient {
         } catch (UnknownHostException e) {
             e.printStackTrace();
         }
-        previousID = -1;
-        nextID = -1;
+        previousID = Hashing.createHash(nodeName);
+        nextID = previousID;
     }
 
     public static NodeClient getInstance(){
@@ -61,6 +61,9 @@ public class NodeClient {
         json.put("typeOfMsg","multicastReply");
         if(currentID<hash && hash<nextID){
             nextID = hash;
+            if (previousID == currentID){
+                previousID = hash;
+            }
             json.put("typeOfNode", "CL");
             json.put("isEndNode", Boolean.FALSE);
             json.put("currentID", currentID);
@@ -70,6 +73,9 @@ public class NodeClient {
         }
         if(previousID< hash && hash<currentID){
             previousID = hash;
+            if (nextID == currentID){
+                nextID = hash;
+            }
             json.put("typeOfNode", "CL");
             json.put("isEndNode", Boolean.FALSE);
             json.put("currentID", currentID);
@@ -81,6 +87,9 @@ public class NodeClient {
         if(currentID>=nextID){ // there is only one node, or multiple nodes but you have the highest ID number because next is lower.
             if(currentID < hash){ // the new node has a higher ID
                 nextID = hash;
+                if (previousID == currentID){
+                    previousID = hash;
+                }
                 json.put("typeOfNode", "CL");
                 json.put("isEndNode", Boolean.TRUE);
                 json.put("currentID", currentID);
@@ -92,6 +101,9 @@ public class NodeClient {
         if(currentID<=previousID){ // you have the lowest nodeID on the network.
             if(currentID > hash){ // The new node has a lower ID.
                 previousID = hash;
+                if (nextID == currentID){
+                    nextID = hash;
+                }
                 json.put("typeOfNode", "CL");
                 json.put("isEndNode", Boolean.TRUE);
                 json.put("currentID", currentID);
@@ -145,12 +157,12 @@ public class NodeClient {
         if(!isEndNode) {
             if (currentID > newNodeID) {
                 nextID = currentID;
-                if(previousID.equals(newNodeID) || previousID.equals(-1)){
+                if(previousID.equals(newNodeID)){
                     previousID = currentID;
                 }
             } else {
                 previousID = currentID;
-                if(nextID.equals(newNodeID) || nextID.equals(-1)){
+                if(nextID.equals(newNodeID)){
                     nextID = currentID;
                 }
             }
@@ -158,12 +170,12 @@ public class NodeClient {
         else{
             if (currentID > newNodeID) {
                 previousID = currentID;
-                if(nextID.equals(newNodeID) || nextID.equals(-1)){
+                if(nextID.equals(newNodeID)){
                     nextID = currentID;
                 }
             } else {
                 nextID = currentID;
-                if(previousID.equals(newNodeID) || previousID.equals(-1)){
+                if(previousID.equals(newNodeID)){
                     previousID = currentID;
                 }
             }
