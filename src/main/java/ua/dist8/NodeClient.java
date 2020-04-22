@@ -250,8 +250,12 @@ public class NodeClient {
         json2.put("typeOfMsg","shutdown");
         json2.put("updateID",nextID);
         System.out.println("Requesting neighbours from NamingServer...");
-        URL url = new URL ("http://" +name+ ":8080/neighbourRequest?nodeID="+h);
+
+        URL url = new URL ("http://host2:80/neighbourRequest?nodeID="+h);
+        //URL url = new URL ("http://" +name+ ":8080/neighbourRequest?nodeID="+h);
         HttpURLConnection con = (HttpURLConnection) url.openConnection();
+        int responseCode = con.getResponseCode();
+        System.out.println("Connecting to " + url +"Response code = "+ responseCode);
         con.setRequestMethod("GET");
         BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
         String inputLine;
@@ -284,9 +288,10 @@ public class NodeClient {
             return null;
         }
         String hostName = nsIP.getHostAddress();
-        String url ="http://"+hostName+":8080/fileRequest?filename=" + filename;
+        //String url ="http://"+hostName+":8080/fileRequest?filename=" + filename;
+        String url ="http://host2:8080/fileRequest?filename=" + filename;
         System.out.println("Trying to connect with "+url);
-        //String url ="http://host2/fileRequest?filename=" + filename;
+
         HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
 
         connection.setRequestMethod("GET");
@@ -303,9 +308,11 @@ public class NodeClient {
             scanner.close();
             // returns a string
             JSONObject jsonResponse = new JSONObject(response);
-            String ip = jsonResponse.getString("inetAddress");
+            Object ip = jsonResponse.get("inetAddress");
+            String ipStr = ip.toString();
+
             System.out.println("Hostname of file is: "+ip);
-            return InetAddress.getByName(ip);
+            return InetAddress.getByName(ipStr);
         }
         System.out.println("Request failed!");
 
@@ -321,9 +328,12 @@ public class NodeClient {
         json2.put("typeOfMsg","shutdown");
         json2.put("updateID",nextID);
         System.out.println("Requesting neighbours from NamingServer...");
-        URL url = new URL ("http://" +name+ ":8080/neighbourRequest?nodeID="+h);
+        //URL url = new URL ("http://" +name+ ":8080/neighbourRequest?nodeID="+h);
+        URL url = new URL ("http://host2:80/neighbourRequest?nodeID="+h);
         HttpURLConnection con = (HttpURLConnection) url.openConnection();
         con.setRequestMethod("GET");
+        int responseCode = con.getResponseCode();
+        System.out.println("Connecting to " + url +"Response code = "+ responseCode);
         BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
         String inputLine;
         StringBuilder content = new StringBuilder();
