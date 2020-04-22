@@ -354,7 +354,7 @@ public class NodeClient {
         sendUnicastMessage(previousNeighbor,json2);
         json2.put("updateID",previousID);
         InetAddress nextNeighbor = (InetAddress) j.get("nextNode");
-        System.out.println("Previous NodeID is: "+previousID+"\n Next NodeID is: "+nextID);
+        System.out.println("Previous NodeID is: "+previousID+"\nNext NodeID is: "+nextID);
     }
 
     /**
