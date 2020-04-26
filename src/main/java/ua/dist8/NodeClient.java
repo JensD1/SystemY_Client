@@ -49,7 +49,6 @@ public class NodeClient {
     public void multicastHandler(String receivedNodeName, InetAddress nodeIP) throws IOException, JSONException, InterruptedException {
         System.out.println("Received a multicast from another Node on the network, processing message ...");
         Integer hash = Hashing.createHash(receivedNodeName);
-
         try {
             nodeName = InetAddress.getLocalHost().getHostName();
         } catch (UnknownHostException e) {
@@ -57,9 +56,15 @@ public class NodeClient {
         }
 
         Integer currentID = Hashing.createHash(nodeName);
+        System.out.println("my own hash is: " + currentID);
+        System.out.println("my Previous is: " + previousID);
+        System.out.println("my next is: " + nextID);
+        System.out.println("The new one is: " + hash);
+
         JSONObject json = new JSONObject();
         json.put("typeOfMsg","multicastReply");
         if(currentID<hash && hash<nextID){
+            System.out.println("In the first if of multicastReply.");
             nextID = hash;
             if (previousID == currentID){
                 previousID = hash;
@@ -72,6 +77,7 @@ public class NodeClient {
             System.out.println("NextID changed to: " + nextID + " Sending unicast message..\nHe is not an end node.");
         }
         else if(previousID< hash && hash<currentID){
+            System.out.println("In the second if of multicastReply.");
             previousID = hash;
             if (nextID == currentID){
                 nextID = hash;
@@ -85,6 +91,7 @@ public class NodeClient {
         }
         // here we will look if the currentID node is the node with the highest or lowes ID number
         else if(currentID>=nextID){ // there is only one node, or multiple nodes but you have the highest ID number because next is lower.
+            System.out.println("In the third if of multicastReply.");
             if(currentID < hash){ // the new node has a higher ID
                 nextID = hash;
                 if (previousID == currentID){
@@ -99,6 +106,7 @@ public class NodeClient {
             }
         }
         else if(currentID<=previousID){ // you have the lowest nodeID on the network.
+            System.out.println("In the fourth if of multicastReply.");
             if(currentID > hash){ // The new node has a lower ID.
                 previousID = hash;
                 if (nextID == currentID){
@@ -149,18 +157,26 @@ public class NodeClient {
     public void receiveMulticastReplyNode(JSONObject json) throws JSONException{
         System.out.println("Received a reply of our discovery multicast message from another node.");
         Boolean isEndNode = json.getBoolean("isEndNode");
-        System.out.println("I became an end node.");
+        if(isEndNode){
+            System.out.println("I am an end node.");
+        }
+        else{
+            System.out.println("I am not an end node.");
+        }
+
         Integer currentID = json.getInt("currentID"); // The other ones ID
         System.out.println("Received a message from ID: " + currentID);
         Integer newNodeID = json.getInt("newNodeID"); // Your own ID
         System.out.println("I have ID: " + newNodeID);
         if(!isEndNode) {
             if (currentID > newNodeID) {
+                System.out.println("first if of receiveMulticastReplyNode");
                 nextID = currentID;
                 if(previousID.equals(newNodeID)){
                     previousID = currentID;
                 }
             } else {
+                System.out.println("second if of receiveMulticastReplyNode");
                 previousID = currentID;
                 if(nextID.equals(newNodeID)){
                     nextID = currentID;
@@ -169,11 +185,13 @@ public class NodeClient {
         }
         else{
             if (currentID > newNodeID) {
+                System.out.println("third if of receiveMulticastReplyNode");
                 previousID = currentID;
                 if(nextID.equals(newNodeID)){
                     nextID = currentID;
                 }
             } else {
+                System.out.println("fourth if of receiveMulticastReplyNode");
                 nextID = currentID;
                 if(previousID.equals(newNodeID)){
                     previousID = currentID;

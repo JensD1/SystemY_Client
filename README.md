@@ -22,3 +22,5 @@ This is a distributed file server.
 
 - FAILURE (nodeclient.java + namingserver.java)
 =>  namingserver has to handle parameter updates
+
+FIX multicasthandler in nodeclient for endnodes!
