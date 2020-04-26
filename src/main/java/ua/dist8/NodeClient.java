@@ -66,7 +66,7 @@ public class NodeClient {
         if(currentID<hash && hash<nextID){
             System.out.println("In the first if of multicastReply.");
             nextID = hash;
-            if (previousID == currentID){
+            if (previousID.equals(currentID)){
                 previousID = hash;
             }
             json.put("typeOfNode", "CL");
@@ -79,7 +79,7 @@ public class NodeClient {
         else if(previousID< hash && hash<currentID){
             System.out.println("In the second if of multicastReply.");
             previousID = hash;
-            if (nextID == currentID){
+            if (nextID.equals(currentID)){
                 nextID = hash;
             }
             json.put("typeOfNode", "CL");
@@ -94,7 +94,7 @@ public class NodeClient {
             System.out.println("In the third if of multicastReply.");
             if(currentID < hash){ // the new node has a higher ID
                 nextID = hash;
-                if (previousID == currentID){
+                if (previousID.equals(currentID)){
                     previousID = hash;
                 }
                 json.put("typeOfNode", "CL");
@@ -109,7 +109,7 @@ public class NodeClient {
             System.out.println("In the fourth if of multicastReply.");
             if(currentID > hash){ // The new node has a lower ID.
                 previousID = hash;
-                if (nextID == currentID){
+                if (nextID.equals(currentID)){
                     nextID = hash;
                 }
                 json.put("typeOfNode", "CL");
