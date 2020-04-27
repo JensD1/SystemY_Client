@@ -9,7 +9,7 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>ua.dist8</groupId>
-    <artifactId>SystemY_Cient</artifactId>
+    <artifactId>SystemY_Client</artifactId>
     <version>2.2-SNAPSHOT</version>
     <name>SystemY_Client</name>
     <description>Client consuming REST naming services</description>
@@ -79,7 +79,7 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <version>2.2.5.RELEASE</version>
                 <configuration>
-                    <mainClass>ua.dist8.NodeClient</mainClass>
+                    <mainClass>ua.dist8.NodeApplication</mainClass>
                 </configuration>
                 <executions>
                     <execution>
