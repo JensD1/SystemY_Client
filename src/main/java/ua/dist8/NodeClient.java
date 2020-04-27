@@ -70,7 +70,7 @@ public class NodeClient {
                 previousID = hash;
             }
             json.put("typeOfNode", "CL");
-            json.put("isEndNode", Boolean.FALSE);
+            json.put("setAs", "next");
             json.put("currentID", currentID);
             json.put("newNodeID", nextID);
             sendUnicastMessage(nodeIP, json);
@@ -83,7 +83,7 @@ public class NodeClient {
                 nextID = hash;
             }
             json.put("typeOfNode", "CL");
-            json.put("isEndNode", Boolean.FALSE);
+            json.put("setAs", "previous");
             json.put("currentID", currentID);
             json.put("newNodeID", previousID);
             sendUnicastMessage(nodeIP, json);
@@ -99,8 +99,7 @@ public class NodeClient {
                     previousID = hash;
                 }
                 json.put("typeOfNode", "CL");
-                json.put("isEndNode", Boolean.TRUE);
-                json.put("posOfEndNode", "Top");
+                json.put("setAs", "next");
                 json.put("currentID", currentID);
                 json.put("newNodeID", nextID);
                 sendUnicastMessage(nodeIP, json);
@@ -114,8 +113,7 @@ public class NodeClient {
                     previousID = hash;
                 }
                 json.put("typeOfNode", "CL");
-                json.put("isEndNode", Boolean.TRUE);
-                json.put("posOfEndNode", "Bottom");
+                json.put("setAs", "next");
                 json.put("currentID", currentID);
                 json.put("newNodeID", nextID);
                 sendUnicastMessage(nodeIP, json);
@@ -131,8 +129,7 @@ public class NodeClient {
                     nextID = hash;
                 }
                 json.put("typeOfNode", "CL");
-                json.put("isEndNode", Boolean.TRUE);
-                json.put("posOfEndNode", "Bottom");
+                json.put("setAs", "previous");
                 json.put("currentID", currentID);
                 json.put("newNodeID", previousID);
                 System.out.println("PreviousID changed to: " + previousID + " Sending unicast message..\nHe is an end node.");
@@ -146,8 +143,7 @@ public class NodeClient {
                     nextID = hash;
                 }
                 json.put("typeOfNode", "CL");
-                json.put("isEndNode", Boolean.TRUE);
-                json.put("posOfEndNode", "Top");
+                json.put("setAs", "previous");
                 json.put("currentID", currentID);
                 json.put("newNodeID", previousID);
                 System.out.println("PreviousID changed to: " + previousID + " Sending unicast message..\nHe is an end node.");
@@ -190,56 +186,23 @@ public class NodeClient {
      */
     public void receiveMulticastReplyNode(JSONObject json) throws JSONException{
         System.out.println("Received a reply of our discovery multicast message from another node.");
-        Boolean isEndNode = json.getBoolean("isEndNode");
-        if(isEndNode){
-            System.out.println("I am an end node.");
-        }
-        else{
-            System.out.println("I am not an end node.");
-        }
-
         Integer currentID = json.getInt("currentID"); // The other ones ID
         System.out.println("Received a message from ID: " + currentID);
         Integer newNodeID = json.getInt("newNodeID"); // Your own ID
         System.out.println("I have ID: " + newNodeID);
-        if(!isEndNode) {
-            if (currentID > newNodeID) {
-                System.out.println("first if of receiveMulticastReplyNode");
-                nextID = currentID;
-                if(previousID.equals(newNodeID)){
-                    previousID = currentID;
-                }
-            } else {
-                System.out.println("second if of receiveMulticastReplyNode");
-                previousID = currentID;
-                if(nextID.equals(newNodeID)){
-                    nextID = currentID;
-                }
-            }
+
+        if(previousID.equals(newNodeID) && nextID.equals(newNodeID)){
+            System.out.println("third if of receiveMulticastReplyNode");
+            previousID = currentID;
+            nextID = currentID;
         }
-        else{ // we are an end node
-            String position = json.getString("posOfEndNode");
-            // the first time, the value of previousID and nextID are set to our own hash ==> we adjust both.
-            if(previousID.equals(newNodeID) && nextID.equals(newNodeID)){
+        else{
+            String setAs = json.getString("setAs");
+            if(setAs.equals("next")){
                 previousID = currentID;
+            }
+            if(setAs.equals("previous")){
                 nextID = currentID;
-            }
-            // if this is not the case:
-            else if(position.equals("Top")){
-                if (previousID < currentID){
-                    previousID = currentID;
-                }
-                if(nextID > currentID){
-                    nextID = currentID;
-                }
-            }
-            else if(position.equals("Bottom")){
-                if (previousID > currentID){
-                    previousID = currentID;
-                }
-                if(nextID < currentID){
-                    nextID = currentID;
-                }
             }
         }
     }
