@@ -364,7 +364,7 @@ public class NodeClient {
         json2.put("typeOfMsg","shutdown");
         json2.put("updateID",nextID);
         System.out.println("Requesting neighbours from NamingServer...");
-        URL url = new URL ("http://" +name+ ":8080/neighbourRequest?nodeID="+h);
+        URL url = new URL ("http://" +name+ ":8080/neighbourRequest?nodeHash="+h);
         HttpURLConnection con = (HttpURLConnection) url.openConnection();
         con.setRequestMethod("GET");
         BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
