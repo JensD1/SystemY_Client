@@ -332,7 +332,9 @@ public class NodeClient {
             shutdownJSON.put("ID", hash);
             logger.debug("Shutdown message for ID: " + hash);
             sendUnicastMessage(nsIP, shutdownJSON);
-
+            //resetting neighbourIDs
+            nextID = Hashing.createHash(nodeName);
+            previousID = nextID;
             logger.info("Succesfuly disconnected from NamingServer!");
         }
     }

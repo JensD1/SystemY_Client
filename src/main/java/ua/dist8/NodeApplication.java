@@ -47,6 +47,7 @@ public class NodeApplication {
                     logger.info("File is located at host" + address.getHostName());
                     break;
                 case "!connect":
+                    //todo check if NS exist, otherwise do nothing
                     nodeClient.multicast();
                     break;
                 case "!disconnect":
@@ -55,7 +56,7 @@ public class NodeApplication {
                     } catch (Exception e) {
                         logger.error(e);
                     }
-                    
+
                     break;
                 case "!printNeighbours":
                     nodeClient.printNeighbours();
