@@ -9,15 +9,15 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>ua.dist8</groupId>
-    <artifactId>SystemY</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
-    <name>SystemY</name>
+    <artifactId>SystemY_Cient</artifactId>
+    <version>2.2-SNAPSHOT</version>
+    <name>SystemY_Client</name>
     <description>File server using REST naming services</description>
     <packaging>jar</packaging>
     <properties>
         <java.version>1.8</java.version>
         <!-- The main class to start by executing "java -jar" -->
-        <start-class>ua.dist8.NamingServerApplication</start-class>
+        <start-class>ua.dist8.NodeApplication</start-class>
 
     </properties>
     <dependencies>
