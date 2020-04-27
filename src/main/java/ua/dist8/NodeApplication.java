@@ -22,9 +22,9 @@ public class NodeApplication {
         InetAddress address;
         Scanner scanner = new Scanner(System.in);
         logger.info("This is V1.0");
-        logger.info("Welcome to the client test application!\n");
+        logger.info("Welcome to the client test application!");
         while(running){
-            logger.info("\nPlease enter a command.\nType !help for a list of commands: ");
+            logger.info("Please enter a command. Type !help for a list of commands: ");
             String input = scanner.nextLine();
             switch(input){
                 case "!help":
@@ -52,7 +52,7 @@ public class NodeApplication {
                 case "!disconnect":
                     try {
                         nodeClient.shutdown();
-                    } catch (InterruptedException e) {
+                    } catch (Exception e) {
                         logger.error(e);
                     }
                     logger.debug("Disconnect successful");
@@ -74,7 +74,7 @@ public class NodeApplication {
                     break;
 
                 default:
-                    logger.error("Invalid command!\n");
+                    logger.error("Invalid command!");
                     break;
             }
         }
