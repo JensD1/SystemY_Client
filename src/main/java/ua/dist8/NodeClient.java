@@ -76,7 +76,7 @@ public class NodeClient {
             sendUnicastMessage(nodeIP, json);
             System.out.println("NextID changed to: " + nextID + " Sending unicast message..\nHe is not an end node.");
         }
-        else if(previousID< hash && hash<currentID){
+        if(previousID< hash && hash<currentID){
             System.out.println("In the second if of multicastReply.");
             previousID = hash;
             if (nextID.equals(currentID)){
@@ -90,35 +90,33 @@ public class NodeClient {
             System.out.println("PreviousID changed to: " + previousID + " Sending unicast message..\nHe is not an end node.");
         }
         // here we will look if the currentID node is the node with the highest or lowes ID number
-        else if(currentID>=nextID){ // there is only one node, or multiple nodes but you have the highest ID number because next is lower.
+        if(currentID>=nextID && currentID < hash){ // there is only one node, or multiple nodes but you have the highest ID number because next is lower.
+            // the new node has a higher ID
             System.out.println("In the third if of multicastReply.");
-            if(currentID < hash){ // the new node has a higher ID
-                nextID = hash;
-                if (previousID.equals(currentID)){
-                    previousID = hash;
-                }
-                json.put("typeOfNode", "CL");
-                json.put("isEndNode", Boolean.TRUE);
-                json.put("currentID", currentID);
-                json.put("newNodeID", nextID);
-                sendUnicastMessage(nodeIP, json);
-                System.out.println("NextID changed to: " + nextID + " Sending unicast message..\nHe is an end node.");
-            }
-        }
-        else if(currentID<=previousID){ // you have the lowest nodeID on the network.
-            System.out.println("In the fourth if of multicastReply.");
-            if(currentID > hash){ // The new node has a lower ID.
+            nextID = hash;
+            if (previousID.equals(currentID)){
                 previousID = hash;
-                if (nextID.equals(currentID)){
-                    nextID = hash;
-                }
-                json.put("typeOfNode", "CL");
-                json.put("isEndNode", Boolean.TRUE);
-                json.put("currentID", currentID);
-                json.put("newNodeID", previousID);
-                System.out.println("PreviousID changed to: " + previousID + " Sending unicast message..\nHe is an end node.");
-                sendUnicastMessage(nodeIP, json);
             }
+            json.put("typeOfNode", "CL");
+            json.put("isEndNode", Boolean.TRUE);
+            json.put("currentID", currentID);
+            json.put("newNodeID", nextID);
+            sendUnicastMessage(nodeIP, json);
+            System.out.println("NextID changed to: " + nextID + " Sending unicast message..\nHe is an end node.");
+        }
+        if(currentID<=previousID && currentID > hash){ // you have the lowest nodeID on the network.
+            // The new node has a lower ID.
+            System.out.println("In the fourth if of multicastReply.");
+            previousID = hash;
+            if (nextID.equals(currentID)){
+                nextID = hash;
+            }
+            json.put("typeOfNode", "CL");
+            json.put("isEndNode", Boolean.TRUE);
+            json.put("currentID", currentID);
+            json.put("newNodeID", previousID);
+            System.out.println("PreviousID changed to: " + previousID + " Sending unicast message..\nHe is an end node.");
+            sendUnicastMessage(nodeIP, json);
         }
     }
 
