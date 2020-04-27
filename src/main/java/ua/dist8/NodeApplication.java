@@ -1,14 +1,18 @@
 package ua.dist8;
 
+
+
 import org.json.JSONException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
 
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.Scanner;
 
 public class NodeApplication {
+
     private static final Logger logger = LogManager.getLogger();
     public static void main(String[] args) throws IOException, JSONException, InterruptedException {
         boolean running = true;
@@ -21,7 +25,7 @@ public class NodeApplication {
         String fileName;
         InetAddress address;
         Scanner scanner = new Scanner(System.in);
-        logger.info("This is V2.0");
+        logger.info("This is V2.2");
         logger.info("Welcome to the client test application!");
         while(running){
             logger.info("Please enter a command. Type !help for a list of commands: ");
