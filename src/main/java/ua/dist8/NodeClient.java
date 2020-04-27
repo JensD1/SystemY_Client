@@ -294,39 +294,41 @@ public class NodeClient {
         JSONObject json = new JSONObject();
         Integer hash = Hashing.createHash(nodeName);
         json.put("typeOfNode", "CL");
-        json.put("typeOfMsg","shutdown");
-        json.put("ID",hash);
-        logger.debug("Shutdown message for ID: "+hash);
-        sendUnicastMessage(nsIP,json);
+        json.put("typeOfMsg", "shutdown");
+        json.put("ID", hash);
+        logger.debug("Shutdown message for ID: " + hash);
+        sendUnicastMessage(nsIP, json);
         logger.debug("Message sent to NamingServer...");
         //This part is for the neighboring nodes:
         String name = nsIP.getHostAddress();
         JSONObject json2 = new JSONObject();
-        json2.put("typeOfMsg","shutdown");
-        json2.put("updateID",nextID);
+        json2.put("typeOfMsg", "shutdown");
+        json2.put("updateID", nextID);
         logger.debug("Requesting neighbours from NamingServer...");
-        URL url = new URL ("http://" +name+ ":8080/neighbourRequest?nodeHash="+hash);
+        URL url = new URL("http://" + name + ":8080/neighbourRequest?nodeHash=" + hash);
         HttpURLConnection con = (HttpURLConnection) url.openConnection();
         con.setRequestMethod("GET");
         int responseCode = con.getResponseCode();
-        logger.debug("Connecting to " + url +"Response code = "+ responseCode);
-        BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
-        String inputLine;
-        StringBuilder content = new StringBuilder();
-        while ((inputLine = in.readLine()) != null) {
-            content.append(inputLine);
+        logger.debug("Connecting to " + url + "Response code = " + responseCode);
+        if (responseCode == 200) { //connection successful
+            String response = "";
+            Scanner scanner = new Scanner(con.getInputStream());
+            while (scanner.hasNextLine()) {
+                response += scanner.nextLine();
+                response += "\n";
+            }
+            scanner.close();
+            con.disconnect();
+            logger.debug("Message received from NamingServer!");
+            JSONObject json3 = new JSONObject(response);
+            logger.debug("Sending Unicast message to neighbours..");
+            String previousNeighbor = json3.getString("previousNode");
+            sendUnicastMessage(InetAddress.getByName(previousNeighbor), json2);
+            json2.put("updateID", previousID);
+            String nextNeighbor = json3.getString("nextNode");
+            sendUnicastMessage(InetAddress.getByName(nextNeighbor), json2);
+            logger.info("Succesfuly disconnected from NamingServer!");
         }
-        in.close();
-        con.disconnect();
-        logger.debug("Message received from NamingServer!");
-        JSONObject json3 = new JSONObject(content.toString());
-        logger.debug("Sending Unicast message to neighbours..");
-        String previousNeighbor = json3.getString("previousNode");
-        sendUnicastMessage(InetAddress.getByName(previousNeighbor),json2);
-        json2.put("updateID",previousID);
-        String nextNeighbor = json3.getString("nextNode");
-        sendUnicastMessage(InetAddress.getByName(nextNeighbor),json2);
-        logger.info("Succesfuly disconnected from NamingServer!");
     }
 
     /**
@@ -350,7 +352,7 @@ public class NodeClient {
 
         int responseCode = connection.getResponseCode();
         logger.debug("Connecting to " + url +"Response code = "+ responseCode);
-        if(responseCode == 200){ //connection successful // Niet zeker wat ik hier moet zetten.
+        if(responseCode == 200){ //connection successful
             String response = "";
             Scanner scanner = new Scanner(connection.getInputStream());
             while(scanner.hasNextLine()){
