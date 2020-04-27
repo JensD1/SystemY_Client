@@ -316,11 +316,11 @@ public class NodeClient {
         System.out.println("Message received from NamingServer!");
         JSONObject j = new JSONObject(content.toString());
         System.out.println("Sending Unicast message to neighbours..");
-        InetAddress previousNeighbor = (InetAddress) j.get("previousNode");
-        sendUnicastMessage(previousNeighbor,json2);
+        String previousNeighbor = j.getString("previousNode");
+        sendUnicastMessage(InetAddress.getByName(previousNeighbor),json2);
         json2.put("updateID",previousID);
-        InetAddress nextNeighbor = (InetAddress) j.get("nextNode");
-        sendUnicastMessage(nextNeighbor,json2);
+        String nextNeighbor = j.getString("nextNode");
+        sendUnicastMessage(InetAddress.getByName(nextNeighbor),json2);
         System.out.println("Succesfuly disconnected from NamingServer!");
     }
 
