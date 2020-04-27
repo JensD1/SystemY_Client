@@ -1,5 +1,7 @@
 package ua.dist8;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -18,7 +20,7 @@ public class NodeClient {
     private Integer previousID;
     private InetAddress nsIP;
     private Semaphore sem = new Semaphore(1);
-
+    private static final Logger logger = LogManager.getLogger();
     private static NodeClient nodeClient = new NodeClient();
 
     /**
@@ -27,8 +29,8 @@ public class NodeClient {
     private NodeClient(){
         try {
             nodeName = InetAddress.getLocalHost().getHostName();
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+            logger.error(e);
         }
         previousID = Hashing.createHash(nodeName);
         nextID = previousID;
@@ -47,24 +49,24 @@ public class NodeClient {
      * @param nodeIP is the IP-address of the node that wants to join
      */
     public void multicastHandler(String receivedNodeName, InetAddress nodeIP) throws IOException, JSONException, InterruptedException {
-        System.out.println("Received a multicast from another Node on the network, processing message ...");
+        logger.debug("Received a multicast from another Node on the network, processing message ...");
         Integer hash = Hashing.createHash(receivedNodeName);
         try {
             nodeName = InetAddress.getLocalHost().getHostName();
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+            logger.error(e);
         }
 
         Integer currentID = Hashing.createHash(nodeName);
-        System.out.println("my own hash is: " + currentID);
-        System.out.println("my Previous is: " + previousID);
-        System.out.println("my next is: " + nextID);
-        System.out.println("The new one is: " + hash);
+        logger.info("my own hash is: " + currentID);
+        logger.info("my Previous is: " + previousID);
+        logger.info("my next is: " + nextID);
+        logger.info("The new one is: " + hash);
 
         JSONObject json = new JSONObject();
         json.put("typeOfMsg","multicastReply");
         if(currentID<hash && hash<nextID){
-            System.out.println("In the first if of multicastReply.");
+            logger.debug("In the first if of multicastReply.");
             nextID = hash;
             if (previousID.equals(currentID)){
                 previousID = hash;
@@ -74,10 +76,10 @@ public class NodeClient {
             json.put("currentID", currentID);
             json.put("newNodeID", nextID);
             sendUnicastMessage(nodeIP, json);
-            System.out.println("NextID changed to: " + nextID + " Sending unicast message..\nHe is not an end node.");
+            logger.debug("NextID changed to: " + nextID + " Sending unicast message.. He is not an end node.");
         }
         if(previousID< hash && hash<currentID){
-            System.out.println("In the second if of multicastReply.");
+            logger.debug("In the second if of multicastReply.");
             previousID = hash;
             if (nextID.equals(currentID)){
                 nextID = hash;
@@ -87,13 +89,13 @@ public class NodeClient {
             json.put("currentID", currentID);
             json.put("newNodeID", previousID);
             sendUnicastMessage(nodeIP, json);
-            System.out.println("PreviousID changed to: " + previousID + " Sending unicast message..\nHe is not an end node.");
+            logger.debug("PreviousID changed to: " + previousID + " Sending unicast message.. He is not an end node.");
         }
         // here we will look if the currentID node is the node with the highest or lowes ID number
         if(currentID>=nextID ){ // there is only one node, or multiple nodes but you have the highest ID number because next is lower.
             if (currentID < hash) {
                 // the new node has a higher ID
-                System.out.println("In the third if part 1 of multicastReply.");
+                logger.debug("In the third if part 1 of multicastReply.");
                 nextID = hash;
                 if (previousID.equals(currentID)) {
                     previousID = hash;
@@ -103,11 +105,11 @@ public class NodeClient {
                 json.put("currentID", currentID);
                 json.put("newNodeID", nextID);
                 sendUnicastMessage(nodeIP, json);
-                System.out.println("NextID changed to: " + nextID + " Sending unicast message..\nHe is an end node.");
+                logger.debug("NextID changed to: " + nextID + " Sending unicast message.. He is an end node.");
             }
             if(currentID > hash && hash < nextID){
                 // the new node has a higher ID
-                System.out.println("In the third if part 2 of multicastReply.");
+                logger.debug("In the third if part 2 of multicastReply.");
                 nextID = hash;
                 if (previousID.equals(currentID)) {
                     previousID = hash;
@@ -117,13 +119,13 @@ public class NodeClient {
                 json.put("currentID", currentID);
                 json.put("newNodeID", nextID);
                 sendUnicastMessage(nodeIP, json);
-                System.out.println("NextID changed to: " + nextID + " Sending unicast message..\nHe is an end node.");
+                logger.debug("NextID changed to: " + nextID + " Sending unicast message.. He is an end node.");
             }
         }
         if(currentID<=previousID){ // you have the lowest nodeID on the network.
             if(currentID > hash) {
                 // The new node has a lower ID.
-                System.out.println("In the fourth if part 1 of multicastReply.");
+                logger.debug("In the fourth if part 1 of multicastReply.");
                 previousID = hash;
                 if (nextID.equals(currentID)) {
                     nextID = hash;
@@ -132,12 +134,12 @@ public class NodeClient {
                 json.put("setAs", "previous");
                 json.put("currentID", currentID);
                 json.put("newNodeID", previousID);
-                System.out.println("PreviousID changed to: " + previousID + " Sending unicast message..\nHe is an end node.");
+                logger.debug("PreviousID changed to: " + previousID + " Sending unicast message.. He is an end node.");
                 sendUnicastMessage(nodeIP, json);
             }
             if (currentID < hash && previousID < hash){
                 // The new node has a lower ID.
-                System.out.println("In the fourth if part 2 of multicastReply.");
+                logger.debug("In the fourth if part 2 of multicastReply.");
                 previousID = hash;
                 if (nextID.equals(currentID)) {
                     nextID = hash;
@@ -146,7 +148,7 @@ public class NodeClient {
                 json.put("setAs", "previous");
                 json.put("currentID", currentID);
                 json.put("newNodeID", previousID);
-                System.out.println("PreviousID changed to: " + previousID + " Sending unicast message..\nHe is an end node.");
+                logger.debug("PreviousID changed to: " + previousID + " Sending unicast message.. He is an end node.");
                 sendUnicastMessage(nodeIP, json);
             }
         }
@@ -185,14 +187,14 @@ public class NodeClient {
      * @throws JSONException
      */
     public void receiveMulticastReplyNode(JSONObject json) throws JSONException{
-        System.out.println("Received a reply of our discovery multicast message from another node.");
+        logger.info("Received a reply of our discovery multicast message from another node.");
         Integer currentID = json.getInt("currentID"); // The other ones ID
-        System.out.println("Received a message from ID: " + currentID);
+        logger.info("Received a message from ID: " + currentID);
         Integer newNodeID = json.getInt("newNodeID"); // Your own ID
-        System.out.println("I have ID: " + newNodeID);
+        logger.info("I have ID: " + newNodeID);
 
         if(previousID.equals(newNodeID) && nextID.equals(newNodeID)){
-            System.out.println("third if of receiveMulticastReplyNode");
+            logger.debug("third if of receiveMulticastReplyNode");
             previousID = currentID;
             nextID = currentID;
         }
@@ -217,25 +219,25 @@ public class NodeClient {
      * @throws InterruptedException
      */
     public void receiveMulticastReplyNS(JSONObject json, InetAddress nsIP) throws JSONException, IOException, InterruptedException {
-        System.out.println("Received a reply of our discovery multicast message from the NamingServer.");
+        logger.info("Received a reply of our discovery multicast message from the NamingServer.");
         int amountOfNodes = (json.getInt("amountOfNodes"));
         if(amountOfNodes >0){
-            System.out.println("Succesfully connected to " + nsIP.getHostName() + "\nThe amount of other nodes in the network = " + amountOfNodes);
+            logger.debug("Succesfully connected to " + nsIP.getHostName() + ". The amount of other nodes in the network = " + amountOfNodes);
             this.nsIP = nsIP; //This will save the IP-address of the NS for later use
         }
         else if(amountOfNodes == 0){
-            System.out.println("I am the only node in the network, setting next/previous ID to myself");
+            logger.debug("I am the only node in the network, setting next/previous ID to myself");
             this.nsIP = nsIP; //This will save the IP-address of the NS for later use
             nextID = Hashing.createHash(nodeName);
             previousID = Hashing.createHash(nodeName);
         }
         else if(amountOfNodes == -1){
             this.nsIP = nsIP; //This will save the IP-address of the NS for later use
-            System.out.println("I am already in the network!\nFetching my next and previous neighbour from NS! ");
+            logger.debug("I am already in the network! Fetching my next and previous neighbour from NS! ");
             //todo getNeighbours
         }
         else{
-            System.out.println("Something went wrong, please try again...");
+            logger.error("Something went wrong, please try again...");
         }
 
     }
@@ -275,7 +277,7 @@ public class NodeClient {
         byte[] contents = obj.toString().getBytes();
         DatagramPacket packet = new DatagramPacket(contents,contents.length, MCgroup, 6012);
         ms.send(packet);
-        System.out.println("Multicast bootstrap message is sent.");
+        logger.info("Multicast bootstrap message is sent.");
     }
 
     /***
@@ -288,23 +290,25 @@ public class NodeClient {
      */
     public void shutdown () throws IOException, JSONException, InterruptedException {
         //That is the part of the NS:
-        System.out.println("Shutting down client...\nSending shutdown message to server and neighbours...");
+        logger.debug("Shutting down client... Sending shutdown message to server and neighbours...");
         JSONObject json = new JSONObject();
         Integer h = Hashing.createHash(nodeName);
         json.put("typeOfNode", "CL");
         json.put("typeOfMsg","shutdown");
         json.put("ID",h);
         sendUnicastMessage(nsIP,json);
-        System.out.println("Message sent to NamingServer...");
+        logger.debug("Message sent to NamingServer...");
         //This part is for the neighboring nodes:
         String name = nsIP.getHostAddress();
         JSONObject json2 = new JSONObject();
         json2.put("typeOfMsg","shutdown");
         json2.put("updateID",nextID);
-        System.out.println("Requesting neighbours from NamingServer...");
+        logger.debug("Requesting neighbours from NamingServer...");
         URL url = new URL ("http://" +name+ ":8080/neighbourRequest?nodeHash="+h);
         HttpURLConnection con = (HttpURLConnection) url.openConnection();
         con.setRequestMethod("GET");
+        int responseCode = con.getResponseCode();
+        logger.debug("Connecting to " + url +"Response code = "+ responseCode);
         BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
         String inputLine;
         StringBuilder content = new StringBuilder();
@@ -313,15 +317,15 @@ public class NodeClient {
         }
         in.close();
         con.disconnect();
-        System.out.println("Message received from NamingServer!");
+        logger.debug("Message received from NamingServer!");
         JSONObject j = new JSONObject(content.toString());
-        System.out.println("Sending Unicast message to neighbours..");
+        logger.debug("Sending Unicast message to neighbours..");
         String previousNeighbor = j.getString("previousNode");
         sendUnicastMessage(InetAddress.getByName(previousNeighbor),json2);
         json2.put("updateID",previousID);
         String nextNeighbor = j.getString("nextNode");
         sendUnicastMessage(InetAddress.getByName(nextNeighbor),json2);
-        System.out.println("Succesfuly disconnected from NamingServer!");
+        logger.info("Succesfuly disconnected from NamingServer!");
     }
 
     /**
@@ -332,19 +336,19 @@ public class NodeClient {
      */
     public InetAddress fileRequest(String filename) throws IOException {
         if (nsIP == null){
-            System.out.println("Not connected to any NameServer, Please use !connect before requesting a file");
+            logger.warn("Not connected to any NameServer, Please use !connect before requesting a file");
             return null;
         }
         String hostName = nsIP.getHostAddress();
         String url ="http://"+hostName+":8080/fileRequest?filename=" + filename;
-        System.out.println("Trying to connect with "+url);
+        logger.debug("Trying to connect with "+url);
         //String url ="http://host2/fileRequest?filename=" + filename;
         HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
 
         connection.setRequestMethod("GET");
 
         int responseCode = connection.getResponseCode();
-        System.out.println("Connecting to " + url +"Response code = "+ responseCode);
+        logger.debug("Connecting to " + url +"Response code = "+ responseCode);
         if(responseCode == 200){ //connection successful // Niet zeker wat ik hier moet zetten.
             String response = "";
             Scanner scanner = new Scanner(connection.getInputStream());
@@ -356,10 +360,10 @@ public class NodeClient {
             // returns a string
             JSONObject jsonResponse = new JSONObject(response);
             String ip = jsonResponse.getString("inetAddress");
-            System.out.println("Hostname of file is: "+ip);
+            logger.debug("Hostname of file is: "+ip);
             return InetAddress.getByName(ip);
         }
-        System.out.println("Request failed!");
+        logger.error("Request failed!");
 
         // an error happened
         return null;
@@ -372,7 +376,7 @@ public class NodeClient {
         JSONObject json2 = new JSONObject();
         json2.put("typeOfMsg","shutdown");
         json2.put("updateID",nextID);
-        System.out.println("Requesting neighbours from NamingServer...");
+        logger.debug("Requesting neighbours from NamingServer...");
         URL url = new URL ("http://" +name+ ":8080/neighbourRequest?nodeHash="+h);
         HttpURLConnection con = (HttpURLConnection) url.openConnection();
         con.setRequestMethod("GET");
@@ -384,14 +388,14 @@ public class NodeClient {
         }
         in.close();
         con.disconnect();
-        System.out.println("Message received from NamingServer!");
+        logger.debug("Message received from NamingServer!");
         JSONObject j = new JSONObject(content.toString());
-        System.out.println("Sending Unicast message to neighbours..");
+        logger.debug("Sending Unicast message to neighbours..");
         InetAddress previousNeighbor = (InetAddress) j.get("previousNode");
         sendUnicastMessage(previousNeighbor,json2);
         json2.put("updateID",previousID);
         InetAddress nextNeighbor = (InetAddress) j.get("nextNode");
-        System.out.println("Previous NodeID is: "+previousID+"\nNext NodeID is: "+nextID);
+        logger.debug("Previous NodeID is: "+previousID+", Next NodeID is: "+nextID);
     }
 
     /**
@@ -400,6 +404,6 @@ public class NodeClient {
 
     public void printNeighbours(){
         Integer myHash = Hashing.createHash(nodeName);
-        System.out.println("Hashing my own nodeName: "+nodeName+"\nMy own hash is: "+myHash+"\nPrevious NodeID is: "+previousID+"\n Next NodeID is: "+nextID);
+        logger.debug("Hashing my own nodeName: "+nodeName+"\nMy own hash is: "+myHash+"\nPrevious NodeID is: "+previousID+"\n Next NodeID is: "+nextID);
     }
 }
