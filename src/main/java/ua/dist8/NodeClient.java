@@ -93,7 +93,7 @@ public class NodeClient {
         if(currentID>=nextID ){ // there is only one node, or multiple nodes but you have the highest ID number because next is lower.
             if (currentID < hash) {
                 // the new node has a higher ID
-                System.out.println("In the third if of multicastReply.");
+                System.out.println("In the third if part 1 of multicastReply.");
                 nextID = hash;
                 if (previousID.equals(currentID)) {
                     previousID = hash;
@@ -107,7 +107,7 @@ public class NodeClient {
             }
             if(currentID > hash && hash < nextID){
                 // the new node has a higher ID
-                System.out.println("In the third if of multicastReply.");
+                System.out.println("In the third if part 2 of multicastReply.");
                 nextID = hash;
                 if (previousID.equals(currentID)) {
                     previousID = hash;
@@ -123,7 +123,7 @@ public class NodeClient {
         if(currentID<=previousID){ // you have the lowest nodeID on the network.
             if(currentID > hash) {
                 // The new node has a lower ID.
-                System.out.println("In the fourth if of multicastReply.");
+                System.out.println("In the fourth if part 1 of multicastReply.");
                 previousID = hash;
                 if (nextID.equals(currentID)) {
                     nextID = hash;
@@ -137,7 +137,7 @@ public class NodeClient {
             }
             if (currentID < hash && previousID < hash){
                 // The new node has a lower ID.
-                System.out.println("In the fourth if of multicastReply.");
+                System.out.println("In the fourth if part 2 of multicastReply.");
                 previousID = hash;
                 if (nextID.equals(currentID)) {
                     nextID = hash;
