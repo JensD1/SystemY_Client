@@ -1,13 +1,12 @@
 package ua.dist8;
 
-import org.json.JSONException;
 
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.Scanner;
 
 public class NodeApplication {
-    public static void main(String[] args) throws IOException, JSONException, InterruptedException {
+    public static void main(String[] args) throws IOException, InterruptedException {
         boolean running = true;
         NodeClient nodeClient = NodeClient.getInstance();
 
