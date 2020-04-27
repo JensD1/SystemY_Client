@@ -100,6 +100,7 @@ public class NodeClient {
                 }
                 json.put("typeOfNode", "CL");
                 json.put("isEndNode", Boolean.TRUE);
+                json.put("posOfEndNode", "Top");
                 json.put("currentID", currentID);
                 json.put("newNodeID", nextID);
                 sendUnicastMessage(nodeIP, json);
@@ -114,6 +115,7 @@ public class NodeClient {
                 }
                 json.put("typeOfNode", "CL");
                 json.put("isEndNode", Boolean.TRUE);
+                json.put("posOfEndNode", "Bottom");
                 json.put("currentID", currentID);
                 json.put("newNodeID", nextID);
                 sendUnicastMessage(nodeIP, json);
@@ -130,6 +132,7 @@ public class NodeClient {
                 }
                 json.put("typeOfNode", "CL");
                 json.put("isEndNode", Boolean.TRUE);
+                json.put("posOfEndNode", "Bottom");
                 json.put("currentID", currentID);
                 json.put("newNodeID", previousID);
                 System.out.println("PreviousID changed to: " + previousID + " Sending unicast message..\nHe is an end node.");
@@ -144,6 +147,7 @@ public class NodeClient {
                 }
                 json.put("typeOfNode", "CL");
                 json.put("isEndNode", Boolean.TRUE);
+                json.put("posOfEndNode", "Top");
                 json.put("currentID", currentID);
                 json.put("newNodeID", previousID);
                 System.out.println("PreviousID changed to: " + previousID + " Sending unicast message..\nHe is an end node.");
@@ -213,18 +217,28 @@ public class NodeClient {
                 }
             }
         }
-        else{
-            if (currentID > newNodeID) {
-                System.out.println("third if of receiveMulticastReplyNode");
+        else{ // we are an end node
+            String position = json.getString("posOfEndNode");
+            // the first time, the value of previousID and nextID are set to our own hash ==> we adjust both.
+            if(previousID.equals(newNodeID) && nextID.equals(newNodeID)){
                 previousID = currentID;
-                if(nextID.equals(newNodeID)){
+                nextID = currentID;
+            }
+            // if this is not the case:
+            else if(position.equals("Top")){
+                if (previousID < currentID){
+                    previousID = currentID;
+                }
+                if(nextID > currentID){
                     nextID = currentID;
                 }
-            } else {
-                System.out.println("fourth if of receiveMulticastReplyNode");
-                nextID = currentID;
-                if(previousID.equals(newNodeID)){
+            }
+            else if(position.equals("Bottom")){
+                if (previousID > currentID){
                     previousID = currentID;
+                }
+                if(nextID < currentID){
+                    nextID = currentID;
                 }
             }
         }
