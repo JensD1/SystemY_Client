@@ -13,6 +13,10 @@
       </configuration>
     </facet>
   </component>
+  <context-param>
+      <param-name>log4jConfiguration</param-name>
+      <param-value>log4j2.xml</param-value>
+  </context-param>
   <component name="NewModuleRootManager" LANGUAGE_LEVEL="JDK_1_8">
     <output url="file://$MODULE_DIR$/target/classes" />
     <output-test url="file://$MODULE_DIR$/target/test-classes" />
