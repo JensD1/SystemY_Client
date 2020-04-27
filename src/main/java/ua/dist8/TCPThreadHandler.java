@@ -29,7 +29,7 @@ public class TCPThreadHandler extends Thread {
                 switch (json.getString("typeOfMsg")) {
                     case "shutdown": {
                         NodeClient nodeClient = NodeClient.getInstance();
-                        nodeClient.shutdown();
+                        //nodeClient.shutdown();
                         break;
                     }
                     case "fileRequest":
