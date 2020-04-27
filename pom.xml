@@ -12,7 +12,7 @@
     <artifactId>SystemY_Cient</artifactId>
     <version>2.2-SNAPSHOT</version>
     <name>SystemY_Client</name>
-    <description>File server using REST naming services</description>
+    <description>Client consuming REST naming services</description>
     <packaging>jar</packaging>
     <properties>
         <java.version>1.8</java.version>
@@ -79,7 +79,7 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <version>2.2.5.RELEASE</version>
                 <configuration>
-                    <mainClass>ua.dist8.NamingServerApplication</mainClass>
+                    <mainClass>ua.dist8.NodeClient</mainClass>
                 </configuration>
                 <executions>
                     <execution>
