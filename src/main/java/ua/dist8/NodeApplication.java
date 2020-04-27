@@ -1,12 +1,16 @@
 package ua.dist8;
 
+import org.json.JSONException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.Scanner;
 
 public class NodeApplication {
-    public static void main(String[] args) throws IOException, InterruptedException {
+    private static final Logger logger = LogManager.getLogger();
+    public static void main(String[] args) throws IOException, JSONException, InterruptedException {
         boolean running = true;
         NodeClient nodeClient = NodeClient.getInstance();
 
@@ -17,17 +21,17 @@ public class NodeApplication {
         String fileName;
         InetAddress address;
         Scanner scanner = new Scanner(System.in);
-        System.out.println("This is V2.0");
-        System.out.println("Welcome to the client test application!\n");
+        logger.info("This is V2.0");
+        logger.info("Welcome to the client test application!");
         while(running){
-            System.out.println("\nPlease enter a command.\nType !help for a list of commands: ");
+            logger.info("Please enter a command. Type !help for a list of commands: ");
             String input = scanner.nextLine();
             switch(input){
                 case "!help":
-                    System.out.println("The available commands are:\n!RequestFilePing\n!requestFile\n!printNeighbours\n!connect\n!disconnect\n!loadNeighboursFromNS \n!exit");
+                    logger.info("The available commands are:\n!RequestFilePing\n!requestFile\n!printNeighbours\n!connect\n!disconnect\n!loadNeighboursFromNS \n!exit");
                     break;
                 case "!requestFilePing":
-                    System.out.println("Give the name of the requested file: ");
+                    logger.info("Give the name of the requested file: ");
                     fileName = scanner.nextLine();
                     address = nodeClient.fileRequest(fileName);
                     if(address == null)
@@ -35,12 +39,12 @@ public class NodeApplication {
                     //todo ping
                     break;
                 case "!requestFile":
-                    System.out.println("Give the name of the requested file: ");
+                    logger.info("Give the name of the requested file: ");
                     fileName = scanner.nextLine();
                     address = nodeClient.fileRequest(fileName);
                     if (address == null)
                         break;
-                    System.out.println("File is located at host" + address.getHostName());
+                    logger.info("File is located at host" + address.getHostName());
                     break;
                 case "!connect":
                     nodeClient.multicast();
@@ -48,10 +52,10 @@ public class NodeApplication {
                 case "!disconnect":
                     try {
                         nodeClient.shutdown();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
+                    } catch (Exception e) {
+                        logger.error(e);
                     }
-                    System.out.println("try catch print");
+                    logger.debug("Disconnect successful");
                     break;
                 case "!printNeighbours":
                     nodeClient.printNeighbours();
@@ -63,14 +67,14 @@ public class NodeApplication {
                     try {
                         nodeClient.shutdown();
                     } catch (InterruptedException e) {
-                        e.printStackTrace();
+                        logger.error(e);
                     }
-                    System.out.println("try catch print");
+                    logger.debug("exiting program");
                     running = false;
                     break;
 
                 default:
-                    System.out.println("Invalid command!\n");
+                    logger.error("Invalid command!");
                     break;
             }
         }
