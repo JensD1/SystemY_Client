@@ -55,7 +55,7 @@ public class NodeApplication {
                     } catch (Exception e) {
                         logger.error(e);
                     }
-                    logger.debug("Disconnect successful");
+                    
                     break;
                 case "!printNeighbours":
                     nodeClient.printNeighbours();

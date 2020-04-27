@@ -292,10 +292,11 @@ public class NodeClient {
         //That is the part of the NS:
         logger.debug("Shutting down client... Sending shutdown message to server and neighbours...");
         JSONObject json = new JSONObject();
-        Integer h = Hashing.createHash(nodeName);
+        Integer hash = Hashing.createHash(nodeName);
         json.put("typeOfNode", "CL");
         json.put("typeOfMsg","shutdown");
-        json.put("ID",h);
+        json.put("ID",hash);
+        logger.debug("Shutdown message for ID: "+hash);
         sendUnicastMessage(nsIP,json);
         logger.debug("Message sent to NamingServer...");
         //This part is for the neighboring nodes:
@@ -304,7 +305,7 @@ public class NodeClient {
         json2.put("typeOfMsg","shutdown");
         json2.put("updateID",nextID);
         logger.debug("Requesting neighbours from NamingServer...");
-        URL url = new URL ("http://" +name+ ":8080/neighbourRequest?nodeHash="+h);
+        URL url = new URL ("http://" +name+ ":8080/neighbourRequest?nodeHash="+hash);
         HttpURLConnection con = (HttpURLConnection) url.openConnection();
         con.setRequestMethod("GET");
         int responseCode = con.getResponseCode();
@@ -318,12 +319,12 @@ public class NodeClient {
         in.close();
         con.disconnect();
         logger.debug("Message received from NamingServer!");
-        JSONObject j = new JSONObject(content.toString());
+        JSONObject json3 = new JSONObject(content.toString());
         logger.debug("Sending Unicast message to neighbours..");
-        String previousNeighbor = j.getString("previousNode");
+        String previousNeighbor = json3.getString("previousNode");
         sendUnicastMessage(InetAddress.getByName(previousNeighbor),json2);
         json2.put("updateID",previousID);
-        String nextNeighbor = j.getString("nextNode");
+        String nextNeighbor = json3.getString("nextNode");
         sendUnicastMessage(InetAddress.getByName(nextNeighbor),json2);
         logger.info("Succesfuly disconnected from NamingServer!");
     }
