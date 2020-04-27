@@ -323,6 +323,7 @@ public class NodeClient {
             JSONObject json3 = new JSONObject(response);
             logger.debug("Sending Unicast message to neighbours..");
             String previousNeighbor = json3.getString("previousNode");
+            logger.debug("Previous host is "+ previousNeighbor);
             sendUnicastMessage(InetAddress.getByName(previousNeighbor), json2);
             json2.put("updateID", previousID);
             String nextNeighbor = json3.getString("nextNode");
