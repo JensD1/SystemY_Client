@@ -18,7 +18,7 @@ public class NodeApplication {
         String fileName;
         InetAddress address;
         Scanner scanner = new Scanner(System.in);
-        System.out.println("This is V1.5");
+        System.out.println("This is V2.0");
         System.out.println("Welcome to the client test application!\n");
         while(running){
             System.out.println("\nPlease enter a command.\nType !help for a list of commands: ");
