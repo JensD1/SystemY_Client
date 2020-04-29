@@ -6,6 +6,7 @@ import org.apache.logging.log4j.Logger;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 
 
 public class TCPListener extends Thread {
@@ -31,6 +32,8 @@ public class TCPListener extends Thread {
                 thread.start();
             }
             logger.debug("The TCPListener thread has ended.");
+        } catch (SocketException e){
+            logger.trace(e);
         } catch (Exception e) {
             logger.error(e);
         }

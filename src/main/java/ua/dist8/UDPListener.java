@@ -32,7 +32,9 @@ public class UDPListener extends Thread {
                 thread.start();
             }
             logger.debug("The UDPListener thread has ended.");
-        }catch(Exception e){
+        } catch (SocketException e){
+            logger.trace(e);
+        } catch(Exception e){
             logger.error(e);
         }
     }
