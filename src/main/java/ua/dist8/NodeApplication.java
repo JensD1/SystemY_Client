@@ -20,12 +20,10 @@ public class NodeApplication {
 
         TCPListener tcpListener = new TCPListener();
         UDPListener udpListener = new UDPListener();
-        tcpListener.start();
-        udpListener.start();
         String fileName;
         InetAddress address;
         Scanner scanner = new Scanner(System.in);
-        logger.info("This is version 2.3");
+        logger.info("This is version 2.4");
         logger.info("Welcome to the client test application!");
         while(running){
             logger.info("Please enter a command. Type !help for a list of commands: ");
@@ -53,10 +51,22 @@ public class NodeApplication {
                 case "!connect":
                     //todo check if NS exist, otherwise do nothing
                     nodeClient.multicast();
+                    if(!tcpListener.isAlive()){
+                        tcpListener.start();
+                    }
+                    if(!udpListener.isAlive()){
+                        udpListener.start();
+                    }
                     break;
                 case "!disconnect":
                     try {
                         nodeClient.shutdown();
+                        if(tcpListener.isAlive()){
+                            tcpListener.stopRunning();
+                        }
+                        if(udpListener.isAlive()){
+                            udpListener.stopRunning();
+                        }
                     } catch (Exception e) {
                         logger.error(e);
                     }
@@ -71,6 +81,12 @@ public class NodeApplication {
                 case "!exit":
                     try {
                         nodeClient.shutdown();
+                        if(tcpListener.isAlive()){
+                            tcpListener.stopRunning();
+                        }
+                        if(udpListener.isAlive()){
+                            udpListener.stopRunning();
+                        }
                     } catch (InterruptedException e) {
                         logger.error(e);
                     }

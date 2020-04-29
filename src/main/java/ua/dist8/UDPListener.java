@@ -7,6 +7,8 @@ import java.net.*;
 
 public class UDPListener extends Thread {
     private static final Logger logger = LogManager.getLogger();
+    private volatile boolean isRunning = true;
+
     @Override
     /**
      * Constantly listens to UDP requests.
@@ -20,7 +22,7 @@ public class UDPListener extends Thread {
             InetAddress MCgroup = InetAddress.getByName("224.0.0.200");
             ms.joinGroup(MCgroup); // todo
             logger.debug("Listening on Multicast address 224.0.0.200");
-            while(true){
+            while(isRunning){
                 byte[] buf = new byte[1000];
                 DatagramPacket datagramPacket = new DatagramPacket(buf, buf.length);
                 ms.receive(datagramPacket);
@@ -32,5 +34,9 @@ public class UDPListener extends Thread {
         }catch(Exception e){
             System.out.println(e);
         }
+    }
+
+    public void stopRunning(){
+        isRunning = false;
     }
 }

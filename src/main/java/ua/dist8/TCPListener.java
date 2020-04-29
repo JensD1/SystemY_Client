@@ -10,6 +10,7 @@ import java.net.Socket;
 
 public class TCPListener extends Thread {
     private static final Logger logger = LogManager.getLogger();
+    private volatile boolean isRunning = true;
     @Override
     /***
      * Constantly listens to TCP requests.
@@ -31,5 +32,9 @@ public class TCPListener extends Thread {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public void stopRunning(){
+        isRunning = false;
     }
 }
