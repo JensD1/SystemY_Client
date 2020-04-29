@@ -11,6 +11,7 @@ import java.net.Socket;
 public class TCPListener extends Thread {
     private static final Logger logger = LogManager.getLogger();
     private volatile boolean isRunning = true;
+    ServerSocket  serverSocket;
     @Override
     /***
      * Constantly listens to TCP requests.
@@ -20,22 +21,29 @@ public class TCPListener extends Thread {
         logger.info("Initializing TCP listener..." );
         try {
             //Initialize socket
-            ServerSocket serverSocket = new ServerSocket(5000);
+            serverSocket = new ServerSocket(5000);
             logger.info("Listening to port 5000....");
-            while (true){
+            while (isRunning){
                 Socket clientSocket = serverSocket.accept();
 
                 TCPThreadHandler thread = new TCPThreadHandler(clientSocket);
                 logger.info("TCP Packet received! Creating new thread(ID= "+thread.getId()+") to process the request.");
                 thread.start();
             }
-        } catch (IOException e) {
-            e.printStackTrace();
+            logger.debug("The TCPListener thread has ended.");
+        } catch (Exception e) {
+            logger.error(e);
         }
     }
 
     public void stopRunning(){
-        isRunning = false;
+        try{
+            serverSocket.close();
+            isRunning = false;
+        }
+        catch (Exception e){
+            logger.error(e);
+        }
     }
 
     public boolean isRunning(){
