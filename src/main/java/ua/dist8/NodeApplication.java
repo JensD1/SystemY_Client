@@ -62,9 +62,11 @@ public class NodeApplication {
                     try {
                         nodeClient.shutdown();
                         if(tcpListener.isAlive()){
+                            logger.info("Stopped listening on TCP ports.");
                             tcpListener.stopRunning();
                         }
                         if(udpListener.isAlive()){
+                            logger.info("Stopped listening on UDP ports.");
                             udpListener.stopRunning();
                         }
                     } catch (Exception e) {
@@ -82,9 +84,11 @@ public class NodeApplication {
                     try {
                         nodeClient.shutdown();
                         if(tcpListener.isAlive()){
+                            logger.info("Stopped listening on TCP ports.");
                             tcpListener.stopRunning();
                         }
                         if(udpListener.isAlive()){
+                            logger.info("Stopped listening on UDP ports.");
                             udpListener.stopRunning();
                         }
                     } catch (InterruptedException e) {

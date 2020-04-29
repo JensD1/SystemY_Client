@@ -1,6 +1,8 @@
 package ua.dist8;
 
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
 
 import java.io.InputStream;
@@ -9,6 +11,7 @@ import java.net.Socket;
 public class TCPThreadHandler extends Thread {
 
     private Socket clientSocket;
+    private static final Logger logger = LogManager.getLogger();
     TCPThreadHandler(Socket clientSocket){
         this.clientSocket = clientSocket;
     }
@@ -29,7 +32,7 @@ public class TCPThreadHandler extends Thread {
                 switch (json.getString("typeOfMsg")) {
                     case "shutdown": {
                         NodeClient nodeClient = NodeClient.getInstance();
-                        //nodeClient.shutdown();
+                        logger.debug("Another node is exiting the network.");
                         break;
                     }
                     case "fileRequest":
