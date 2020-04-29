@@ -7,7 +7,7 @@ import java.net.*;
 
 public class UDPListener extends Thread {
     private static final Logger logger = LogManager.getLogger();
-    private volatile boolean isRunning = true;
+    private volatile boolean isRunning = false;
     MulticastSocket ms;
     @Override
     /**
@@ -16,6 +16,7 @@ public class UDPListener extends Thread {
      */
     public void run() {
         try{
+            isRunning = true;
             // UDP parameters
             logger.info("Initializing UDP listener..." );
             ms = new MulticastSocket(6012);

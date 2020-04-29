@@ -11,7 +11,7 @@ import java.net.SocketException;
 
 public class TCPListener extends Thread {
     private static final Logger logger = LogManager.getLogger();
-    private volatile boolean isRunning = true;
+    private volatile boolean isRunning = false;
     ServerSocket  serverSocket;
     @Override
     /***
@@ -19,6 +19,7 @@ public class TCPListener extends Thread {
      * When there is an incoming request, it generates a new thread to handle it.
      */
     public void run() {
+        isRunning = true;
         logger.info("Initializing TCP listener..." );
         try {
             //Initialize socket
