@@ -417,4 +417,25 @@ public class NodeClient {
         Integer myHash = Hashing.createHash(nodeName);
         logger.debug("Hashing my own nodeName: "+nodeName+"\nMy own hash is: "+myHash+"\nPrevious NodeID is: "+previousID+"\n Next NodeID is: "+nextID);
     }
+
+    public void listOfFiles () throws IOException, InterruptedException {
+
+        File folder = new File("/home/pi/files/");
+        File[] listOfFiles = folder.listFiles();
+
+        for (File file : listOfFiles) {
+            if (file.isFile()) {
+                String name = file.getName();
+                Integer fileHash = Hashing.createHash(name);
+                JSONObject json = new JSONObject();
+                json.put("typeOfMsg", "replicationStart");
+                json.put("typeOfNode", "CL");
+                json.put("fileHash", fileHash);
+                sendUnicastMessage(nsIP, json);
+
+            }
+        }
+
+    }
+
 }
