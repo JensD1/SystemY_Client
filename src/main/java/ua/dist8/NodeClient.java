@@ -252,9 +252,11 @@ public class NodeClient {
         Integer updateID = json.getInt("updateID");
         if(target.equals("next")){
             nextID = updateID;
+            logger.info("NextID has changed to " + nextID);
         }
         else if(target.equals("previous")){
             previousID = updateID;
+            logger.info("PreviousID has changed to " + previousID);
         }
         else{
             logger.error("Invalled target in receivedShutdown().");
