@@ -37,4 +37,8 @@ public class TCPListener extends Thread {
     public void stopRunning(){
         isRunning = false;
     }
+
+    public boolean isRunning(){
+        return isRunning;
+    }
 }

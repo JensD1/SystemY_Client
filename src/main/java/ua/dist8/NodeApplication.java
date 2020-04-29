@@ -23,7 +23,7 @@ public class NodeApplication {
         String fileName;
         InetAddress address;
         Scanner scanner = new Scanner(System.in);
-        logger.info("This is version 2.4");
+        logger.info("This is version 2.4.2");
         logger.info("Welcome to the client test application!");
         while(running){
             logger.info("Please enter a command. Type !help for a list of commands: ");
@@ -61,11 +61,11 @@ public class NodeApplication {
                 case "!disconnect":
                     try {
                         nodeClient.shutdown();
-                        if(tcpListener.isAlive()){
+                        if(tcpListener.isRunning()){
                             logger.info("Stopped listening on TCP ports.");
                             tcpListener.stopRunning();
                         }
-                        if(udpListener.isAlive()){
+                        if(udpListener.isRunning()){
                             logger.info("Stopped listening on UDP ports.");
                             udpListener.stopRunning();
                         }
@@ -83,11 +83,11 @@ public class NodeApplication {
                 case "!exit":
                     try {
                         nodeClient.shutdown();
-                        if(tcpListener.isAlive()){
+                        if(tcpListener.isRunning()){
                             logger.info("Stopped listening on TCP ports.");
                             tcpListener.stopRunning();
                         }
-                        if(udpListener.isAlive()){
+                        if(udpListener.isRunning()){
                             logger.info("Stopped listening on UDP ports.");
                             udpListener.stopRunning();
                         }
