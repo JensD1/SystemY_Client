@@ -248,13 +248,17 @@ public class NodeClient {
      * @throws JSONException
      */
     public void receivedShutdown(JSONObject json) throws JSONException{
-
+        String target = json.getString("target");
         Integer updateID = json.getInt("updateID");
-        if(updateID>nextID){
-            nextID=updateID;
+        if(target.equals("next")){
+            nextID = updateID;
         }
-        else
-            previousID=updateID;
+        else if(target.equals("previous")){
+            previousID = updateID;
+        }
+        else{
+            logger.error("Invalled target in receivedShutdown().");
+        }
     }
 
     /**
@@ -296,6 +300,7 @@ public class NodeClient {
         String name = nsIP.getHostAddress();
         JSONObject neighbourJSON = new JSONObject();
         neighbourJSON.put("typeOfMsg", "shutdown");
+        neighbourJSON.put("target", "next");
         neighbourJSON.put("updateID", nextID);
         logger.debug("Requesting neighbours from NamingServer...");
         URL url = new URL("http://" + name + ":8080/neighbourRequest?nodeHash=" + hash);
@@ -320,6 +325,7 @@ public class NodeClient {
             logger.debug("Previous host is "+ previousNeighbor);
             sendUnicastMessage(InetAddress.getByName(previousNeighbor), neighbourJSON);
             neighbourJSON.put("updateID", previousID);
+            neighbourJSON.put("target", "previous");
             String nextNeighbor = responseJSON.getString("nextNode");
             sendUnicastMessage(InetAddress.getByName(nextNeighbor), neighbourJSON);
 

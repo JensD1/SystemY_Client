@@ -33,6 +33,7 @@ public class TCPThreadHandler extends Thread {
                     case "shutdown": {
                         NodeClient nodeClient = NodeClient.getInstance();
                         logger.debug("Another node is exiting the network.");
+                        nodeClient.receivedShutdown(json);
                         break;
                     }
                     case "fileRequest":
