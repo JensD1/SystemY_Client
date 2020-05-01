@@ -397,39 +397,6 @@ public class NodeClient {
         return null;
     }
 
-
-    public void getNeighbours(){
-        try {
-            Integer h = Hashing.createHash(nodeName);
-            String name = nsIP.getHostAddress();
-            JSONObject json2 = new JSONObject();
-            json2.put("typeOfMsg", "shutdown");
-            json2.put("updateID", nextID);
-            logger.debug("Requesting neighbours from NamingServer...");
-            URL url = new URL("http://" + name + ":8080/neighbourRequest?nodeHash=" + h);
-            HttpURLConnection con = (HttpURLConnection) url.openConnection();
-            con.setRequestMethod("GET");
-            BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
-            String inputLine;
-            StringBuilder content = new StringBuilder();
-            while ((inputLine = in.readLine()) != null) {
-                content.append(inputLine);
-            }
-            in.close();
-            con.disconnect();
-            logger.debug("Message received from NamingServer!");
-            JSONObject j = new JSONObject(content.toString());
-            logger.debug("Sending Unicast message to neighbours..");
-            InetAddress previousNeighbor = (InetAddress) j.get("previousNode");
-            sendUnicastMessage(previousNeighbor, json2);
-            json2.put("updateID", previousID);
-            InetAddress nextNeighbor = (InetAddress) j.get("nextNode");
-            logger.debug("Previous NodeID is: " + previousID + ", Next NodeID is: " + nextID);
-        } catch(Exception e){
-            logger.error(e);
-        }
-    }
-
     /**
      * Print the neighbours of this node.
      */
