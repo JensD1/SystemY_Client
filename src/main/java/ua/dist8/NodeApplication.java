@@ -23,7 +23,7 @@ public class NodeApplication {
         String fileName;
         InetAddress address;
         Scanner scanner = new Scanner(System.in);
-        logger.info("This is version 2.5.3");
+        logger.info("This is version 2.5.4");
         logger.info("Welcome to the client test application!");
         while(running){
             logger.info("Please enter a command. Type !help for a list of commands: ");
@@ -52,13 +52,13 @@ public class NodeApplication {
                     //todo check if NS exist, otherwise do nothing
                     tcpListener = new TCPListener();
                     udpListener = new UDPListener();
-                    nodeClient.multicast();
                     if(!tcpListener.isRunning()){
                         tcpListener.start();
                     }
                     if(!udpListener.isRunning()){
                         udpListener.start();
                     }
+                    nodeClient.multicast();
                     break;
                 case "!disconnect":
                     try {

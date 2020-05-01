@@ -225,7 +225,7 @@ public class NodeClient {
     public void receiveMulticastReplyNS(JSONObject json, InetAddress nsIP) throws JSONException, IOException, InterruptedException {
         logger.info("Received a reply of our discovery multicast message from the NamingServer.");
         int amountOfNodes = (json.getInt("amountOfNodes"));
-        if(amountOfNodes >0){
+        if(amountOfNodes > 0){
             logger.debug("Succesfully connected to " + nsIP.getHostName() + ". The amount of other nodes in the network = " + amountOfNodes);
             this.nsIP = nsIP; //This will save the IP-address of the NS for later use
         }
@@ -304,6 +304,7 @@ public class NodeClient {
             logger.debug("Starting shutdown procedure...");
             //This part is for the neighboring nodes:
             String name = nsIP.getHostAddress();
+            logger.info("The hostaddress of the namingserver is " + name);
             JSONObject neighbourJSON = new JSONObject();
             neighbourJSON.put("typeOfMsg", "shutdown");
             neighbourJSON.put("target", "next");
