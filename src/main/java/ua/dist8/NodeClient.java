@@ -166,15 +166,19 @@ public class NodeClient {
      * @throws IOException the exception to handle the outputStream exceptions
      * @throws JSONException the exception to handle the JSON exceptions
      */
-    public void sendUnicastMessage(InetAddress toSend,JSONObject json) throws IOException, JSONException, InterruptedException {
-        sem.acquire();
-        Socket socket = new Socket(toSend, 5000);
-        OutputStream outputStream = socket.getOutputStream();
-        outputStream.write(json.toString().getBytes());
-        outputStream.flush();
-        outputStream.close();
-        socket.close();
-        sem.release();
+    public void sendUnicastMessage(InetAddress toSend,JSONObject json){
+        try {
+            sem.acquire();
+            Socket socket = new Socket(toSend, 5000);
+            OutputStream outputStream = socket.getOutputStream();
+            outputStream.write(json.toString().getBytes());
+            outputStream.flush();
+            outputStream.close();
+            socket.close();
+            sem.release();
+        } catch(Exception e){
+            logger.error(e);
+        }
     }
 
     /**
@@ -294,56 +298,60 @@ public class NodeClient {
      * @throws IOException
      * @throws JSONException
      */
-    public void shutdown () throws IOException, JSONException, InterruptedException {
+    public void shutdown (){
+        try{
+            Integer hash = Hashing.createHash(nodeName);
+            logger.debug("Starting shutdown procedure...");
+            //This part is for the neighboring nodes:
+            String name = nsIP.getHostAddress();
+            JSONObject neighbourJSON = new JSONObject();
+            neighbourJSON.put("typeOfMsg", "shutdown");
+            neighbourJSON.put("target", "next");
+            neighbourJSON.put("updateID", nextID);
+            logger.debug("Requesting neighbours from NamingServer...");
+            URL url = new URL("http://" + name + ":8080/neighbourRequest?nodeHash=" + hash);
+            HttpURLConnection con = (HttpURLConnection) url.openConnection();
+            con.setRequestMethod("GET");
+            int responseCode = con.getResponseCode();
+            logger.debug("Connecting to " + url + "Response code = " + responseCode);
+            if (responseCode == 200) { //connection successful, NS can only remove the mode if he finds the node
+                String response = "";
+                Scanner scanner = new Scanner(con.getInputStream());
+                while (scanner.hasNextLine()) {
+                    response += scanner.nextLine();
+                    response += "\n";
+                }
+                scanner.close();
+                con.disconnect();
 
-        Integer hash = Hashing.createHash(nodeName);
-        logger.debug("Starting shutdown procedure...");
-        //This part is for the neighboring nodes:
-        String name = nsIP.getHostAddress();
-        JSONObject neighbourJSON = new JSONObject();
-        neighbourJSON.put("typeOfMsg", "shutdown");
-        neighbourJSON.put("target", "next");
-        neighbourJSON.put("updateID", nextID);
-        logger.debug("Requesting neighbours from NamingServer...");
-        URL url = new URL("http://" + name + ":8080/neighbourRequest?nodeHash=" + hash);
-        HttpURLConnection con = (HttpURLConnection) url.openConnection();
-        con.setRequestMethod("GET");
-        int responseCode = con.getResponseCode();
-        logger.debug("Connecting to " + url + "Response code = " + responseCode);
-        if (responseCode == 200) { //connection successful, NS can only remove the mode if he finds the node
-            String response = "";
-            Scanner scanner = new Scanner(con.getInputStream());
-            while (scanner.hasNextLine()) {
-                response += scanner.nextLine();
-                response += "\n";
+                logger.debug("Neighbours received from NamingServer!");
+                JSONObject responseJSON = new JSONObject(response);
+                logger.debug("Sending Unicast message to neighbours..");
+                String previousNeighbor = responseJSON.getString("previousNode");
+                logger.debug("Previous host is " + previousNeighbor);
+                sendUnicastMessage(InetAddress.getByName(previousNeighbor), neighbourJSON);
+                neighbourJSON.put("updateID", previousID);
+                neighbourJSON.put("target", "previous");
+                String nextNeighbor = responseJSON.getString("nextNode");
+                sendUnicastMessage(InetAddress.getByName(nextNeighbor), neighbourJSON);
+
+                //Sending shutdown msg to NS
+                logger.debug("Shutting down client... Asking the NamingServer to remove us from the network..");
+                JSONObject shutdownJSON = new JSONObject();
+
+                shutdownJSON.put("typeOfNode", "CL");
+                shutdownJSON.put("typeOfMsg", "shutdown");
+                shutdownJSON.put("ID", hash);
+                logger.debug("Shutdown message for ID: " + hash);
+                sendUnicastMessage(nsIP, shutdownJSON);
+                //resetting neighbourIDs
+                nextID = Hashing.createHash(nodeName);
+                previousID = nextID;
+                logger.info("Succesfuly disconnected from NamingServer!");
             }
-            scanner.close();
-            con.disconnect();
-
-            logger.debug("Neighbours received from NamingServer!");
-            JSONObject responseJSON = new JSONObject(response);
-            logger.debug("Sending Unicast message to neighbours..");
-            String previousNeighbor = responseJSON.getString("previousNode");
-            logger.debug("Previous host is "+ previousNeighbor);
-            sendUnicastMessage(InetAddress.getByName(previousNeighbor), neighbourJSON);
-            neighbourJSON.put("updateID", previousID);
-            neighbourJSON.put("target", "previous");
-            String nextNeighbor = responseJSON.getString("nextNode");
-            sendUnicastMessage(InetAddress.getByName(nextNeighbor), neighbourJSON);
-
-            //Sending shutdown msg to NS
-            logger.debug("Shutting down client... Asking the NamingServer to remove us from the network..");
-            JSONObject shutdownJSON = new JSONObject();
-
-            shutdownJSON.put("typeOfNode", "CL");
-            shutdownJSON.put("typeOfMsg", "shutdown");
-            shutdownJSON.put("ID", hash);
-            logger.debug("Shutdown message for ID: " + hash);
-            sendUnicastMessage(nsIP, shutdownJSON);
-            //resetting neighbourIDs
-            nextID = Hashing.createHash(nodeName);
-            previousID = nextID;
-            logger.info("Succesfuly disconnected from NamingServer!");
+        }
+        catch (Exception e){
+            logger.error(e);
         }
     }
 
