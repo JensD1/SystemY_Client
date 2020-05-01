@@ -18,19 +18,19 @@ public class NodeApplication {
         boolean running = true;
         NodeClient nodeClient = NodeClient.getInstance();
 
-        TCPListener tcpListener = new TCPListener();
-        UDPListener udpListener = new UDPListener();
+        TCPListener tcpListener = null;
+        UDPListener udpListener = null;
         String fileName;
         InetAddress address;
         Scanner scanner = new Scanner(System.in);
-        logger.info("This is version 2.4");
+        logger.info("This is version 2.5.6");
         logger.info("Welcome to the client test application!");
         while(running){
             logger.info("Please enter a command. Type !help for a list of commands: ");
             String input = scanner.nextLine();
             switch(input){
                 case "!help":
-                    logger.info("The available commands are:\n!RequestFilePing\n!requestFile\n!printNeighbours\n!connect\n!disconnect\n!loadNeighboursFromNS \n!exit");
+                    logger.info("The available commands are:\n!RequestFilePing\n!requestFile\n!printNeighbours\n!connect\n!disconnect\n!exit");
                     break;
                 case "!requestFilePing":
                     logger.info("Give the name of the requested file: ");
@@ -50,24 +50,30 @@ public class NodeApplication {
                     break;
                 case "!connect":
                     //todo check if NS exist, otherwise do nothing
-                    nodeClient.multicast();
-                    if(!tcpListener.isAlive()){
+                    tcpListener = new TCPListener();
+                    udpListener = new UDPListener();
+                    if(!tcpListener.isRunning()){
                         tcpListener.start();
                     }
-                    if(!udpListener.isAlive()){
+                    if(!udpListener.isRunning()){
                         udpListener.start();
                     }
+                    nodeClient.multicast();
                     break;
                 case "!disconnect":
                     try {
                         nodeClient.shutdown();
-                        if(tcpListener.isAlive()){
-                            logger.info("Stopped listening on TCP ports.");
-                            tcpListener.stopRunning();
+                        if(tcpListener != null) {
+                            if (tcpListener.isRunning()) {
+                                logger.info("Stopped listening on TCP ports.");
+                                tcpListener.stopRunning();
+                            }
                         }
-                        if(udpListener.isAlive()){
-                            logger.info("Stopped listening on UDP ports.");
-                            udpListener.stopRunning();
+                        if(udpListener != null) {
+                            if (udpListener.isRunning()) {
+                                logger.info("Stopped listening on UDP ports.");
+                                udpListener.stopRunning();
+                            }
                         }
                     } catch (Exception e) {
                         logger.error(e);
@@ -77,22 +83,19 @@ public class NodeApplication {
                 case "!printNeighbours":
                     nodeClient.printNeighbours();
                     break;
-                case "!loadNeighboursFromNS":
-                    nodeClient.getNeighbours();
-                    break;
                 case "!exit":
-                    try {
-                        nodeClient.shutdown();
-                        if(tcpListener.isAlive()){
+                    nodeClient.shutdown();
+                    if(tcpListener != null) {
+                        if (tcpListener.isRunning()) {
                             logger.info("Stopped listening on TCP ports.");
                             tcpListener.stopRunning();
                         }
-                        if(udpListener.isAlive()){
+                    }
+                    if(udpListener != null) {
+                        if (udpListener.isRunning()) {
                             logger.info("Stopped listening on UDP ports.");
                             udpListener.stopRunning();
                         }
-                    } catch (InterruptedException e) {
-                        logger.error(e);
                     }
                     logger.debug("exiting program");
                     running = false;

@@ -166,15 +166,19 @@ public class NodeClient {
      * @throws IOException the exception to handle the outputStream exceptions
      * @throws JSONException the exception to handle the JSON exceptions
      */
-    public void sendUnicastMessage(InetAddress toSend,JSONObject json) throws IOException, JSONException, InterruptedException {
-        sem.acquire();
-        Socket socket = new Socket(toSend, 5000);
-        OutputStream outputStream = socket.getOutputStream();
-        outputStream.write(json.toString().getBytes());
-        outputStream.flush();
-        outputStream.close();
-        socket.close();
-        sem.release();
+    public void sendUnicastMessage(InetAddress toSend,JSONObject json){
+        try {
+            sem.acquire();
+            Socket socket = new Socket(toSend, 5000);
+            OutputStream outputStream = socket.getOutputStream();
+            outputStream.write(json.toString().getBytes());
+            outputStream.flush();
+            outputStream.close();
+            socket.close();
+            sem.release();
+        } catch(Exception e){
+            logger.error(e);
+        }
     }
 
     /**
@@ -221,12 +225,12 @@ public class NodeClient {
     public void receiveMulticastReplyNS(JSONObject json, InetAddress nsIP) throws JSONException, IOException, InterruptedException {
         logger.info("Received a reply of our discovery multicast message from the NamingServer.");
         int amountOfNodes = (json.getInt("amountOfNodes"));
-        if(amountOfNodes >0){
+        if(amountOfNodes > 0){
             logger.debug("Succesfully connected to " + nsIP.getHostName() + ". The amount of other nodes in the network = " + amountOfNodes);
             this.nsIP = nsIP; //This will save the IP-address of the NS for later use
         }
         else if(amountOfNodes == 0){
-            logger.debug("I am the only node in the network, setting next/previous ID to myself");
+            logger.debug("Succesfully connected to " + nsIP.getHostName() +". I am the only node in the network, setting next/previous ID to myself");
             this.nsIP = nsIP; //This will save the IP-address of the NS for later use
             nextID = Hashing.createHash(nodeName);
             previousID = Hashing.createHash(nodeName);
@@ -248,13 +252,19 @@ public class NodeClient {
      * @throws JSONException
      */
     public void receivedShutdown(JSONObject json) throws JSONException{
-
+        String target = json.getString("target");
         Integer updateID = json.getInt("updateID");
-        if(updateID>nextID){
-            nextID=updateID;
+        if(target.equals("next")){
+            nextID = updateID;
+            logger.info("NextID has changed to " + nextID);
         }
-        else
-            previousID=updateID;
+        else if(target.equals("previous")){
+            previousID = updateID;
+            logger.info("PreviousID has changed to " + previousID);
+        }
+        else{
+            logger.error("Invalled target in receivedShutdown().");
+        }
     }
 
     /**
@@ -288,54 +298,61 @@ public class NodeClient {
      * @throws IOException
      * @throws JSONException
      */
-    public void shutdown () throws IOException, JSONException, InterruptedException {
+    public void shutdown (){
+        try{
+            Integer hash = Hashing.createHash(nodeName);
+            logger.debug("Starting shutdown procedure...");
+            //This part is for the neighboring nodes:
+            String name = nsIP.getHostAddress();
+            logger.info("The hostaddress of the namingserver is " + name);
+            JSONObject neighbourJSON = new JSONObject();
+            neighbourJSON.put("typeOfMsg", "shutdown");
+            neighbourJSON.put("target", "next");
+            neighbourJSON.put("updateID", nextID);
+            logger.debug("Requesting neighbours from NamingServer...");
+            URL url = new URL("http://" + name + ":8080/neighbourRequest?nodeHash=" + hash);
+            HttpURLConnection con = (HttpURLConnection) url.openConnection();
+            con.setRequestMethod("GET");
+            int responseCode = con.getResponseCode();
+            logger.debug("Connecting to " + url + "Response code = " + responseCode);
+            if (responseCode == 200) { //connection successful, NS can only remove the mode if he finds the node
+                String response = "";
+                Scanner scanner = new Scanner(con.getInputStream());
+                while (scanner.hasNextLine()) {
+                    response += scanner.nextLine();
+                    response += "\n";
+                }
+                scanner.close();
+                con.disconnect();
 
-        Integer hash = Hashing.createHash(nodeName);
-        logger.debug("Starting shutdown procedure...");
-        //This part is for the neighboring nodes:
-        String name = nsIP.getHostAddress();
-        JSONObject neighbourJSON = new JSONObject();
-        neighbourJSON.put("typeOfMsg", "shutdown");
-        neighbourJSON.put("updateID", nextID);
-        logger.debug("Requesting neighbours from NamingServer...");
-        URL url = new URL("http://" + name + ":8080/neighbourRequest?nodeHash=" + hash);
-        HttpURLConnection con = (HttpURLConnection) url.openConnection();
-        con.setRequestMethod("GET");
-        int responseCode = con.getResponseCode();
-        logger.debug("Connecting to " + url + "Response code = " + responseCode);
-        if (responseCode == 200) { //connection successful, NS can only remove the mode if he finds the node
-            String response = "";
-            Scanner scanner = new Scanner(con.getInputStream());
-            while (scanner.hasNextLine()) {
-                response += scanner.nextLine();
-                response += "\n";
+                logger.debug("Neighbours received from NamingServer!");
+                JSONObject responseJSON = new JSONObject(response);
+                logger.debug("Sending Unicast message to neighbours..");
+                String previousNeighbor = responseJSON.getString("previousNode");
+                logger.debug("Previous host is " + previousNeighbor);
+                sendUnicastMessage(InetAddress.getByName(previousNeighbor), neighbourJSON);
+                neighbourJSON.put("updateID", previousID);
+                neighbourJSON.put("target", "previous");
+                String nextNeighbor = responseJSON.getString("nextNode");
+                sendUnicastMessage(InetAddress.getByName(nextNeighbor), neighbourJSON);
+
+                //Sending shutdown msg to NS
+                logger.debug("Shutting down client... Asking the NamingServer to remove us from the network..");
+                JSONObject shutdownJSON = new JSONObject();
+
+                shutdownJSON.put("typeOfNode", "CL");
+                shutdownJSON.put("typeOfMsg", "shutdown");
+                shutdownJSON.put("ID", hash);
+                logger.debug("Shutdown message for ID: " + hash);
+                sendUnicastMessage(nsIP, shutdownJSON);
+                //resetting neighbourIDs
+                nextID = Hashing.createHash(nodeName);
+                previousID = nextID;
+                logger.info("Succesfuly disconnected from NamingServer!");
             }
-            scanner.close();
-            con.disconnect();
-
-            logger.debug("Neighbours received from NamingServer!");
-            JSONObject responseJSON = new JSONObject(response);
-            logger.debug("Sending Unicast message to neighbours..");
-            String previousNeighbor = responseJSON.getString("previousNode");
-            logger.debug("Previous host is "+ previousNeighbor);
-            sendUnicastMessage(InetAddress.getByName(previousNeighbor), neighbourJSON);
-            neighbourJSON.put("updateID", previousID);
-            String nextNeighbor = responseJSON.getString("nextNode");
-            sendUnicastMessage(InetAddress.getByName(nextNeighbor), neighbourJSON);
-
-            //Sending shutdown msg to NS
-            logger.debug("Shutting down client... Asking the NamingServer to remove us from the network..");
-            JSONObject shutdownJSON = new JSONObject();
-
-            shutdownJSON.put("typeOfNode", "CL");
-            shutdownJSON.put("typeOfMsg", "shutdown");
-            shutdownJSON.put("ID", hash);
-            logger.debug("Shutdown message for ID: " + hash);
-            sendUnicastMessage(nsIP, shutdownJSON);
-            //resetting neighbourIDs
-            nextID = Hashing.createHash(nodeName);
-            previousID = nextID;
-            logger.info("Succesfuly disconnected from NamingServer!");
+        }
+        catch (Exception e){
+            logger.error(e);
         }
     }
 
@@ -378,35 +395,6 @@ public class NodeClient {
 
         // an error happened
         return null;
-    }
-
-
-    public void getNeighbours() throws IOException, InterruptedException {
-        Integer h = Hashing.createHash(nodeName);
-        String name = nsIP.getHostAddress();
-        JSONObject json2 = new JSONObject();
-        json2.put("typeOfMsg","shutdown");
-        json2.put("updateID",nextID);
-        logger.debug("Requesting neighbours from NamingServer...");
-        URL url = new URL ("http://" +name+ ":8080/neighbourRequest?nodeHash="+h);
-        HttpURLConnection con = (HttpURLConnection) url.openConnection();
-        con.setRequestMethod("GET");
-        BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
-        String inputLine;
-        StringBuilder content = new StringBuilder();
-        while ((inputLine = in.readLine()) != null) {
-            content.append(inputLine);
-        }
-        in.close();
-        con.disconnect();
-        logger.debug("Message received from NamingServer!");
-        JSONObject j = new JSONObject(content.toString());
-        logger.debug("Sending Unicast message to neighbours..");
-        InetAddress previousNeighbor = (InetAddress) j.get("previousNode");
-        sendUnicastMessage(previousNeighbor,json2);
-        json2.put("updateID",previousID);
-        InetAddress nextNeighbor = (InetAddress) j.get("nextNode");
-        logger.debug("Previous NodeID is: "+previousID+", Next NodeID is: "+nextID);
     }
 
     /**
