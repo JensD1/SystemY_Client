@@ -47,6 +47,15 @@ public class TCPThreadHandler extends Thread {
                         }
                         break;
                     }
+
+                    case "replicationStart" : {
+                        NodeClient nodeClient = NodeClient.getInstance();
+                        if (json.getString("typeOfNode").equals("NS")) {
+                            nodeClient.fileLocationReplyHandler(json);
+                        }
+
+
+                    }
                 }
             }
             clientInput.close();

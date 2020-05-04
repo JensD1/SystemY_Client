@@ -11,7 +11,13 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 
 import java.net.*;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Scanner;
+import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.Semaphore;
 
 public class NodeClient {
@@ -22,6 +28,7 @@ public class NodeClient {
     private Semaphore sem = new Semaphore(1);
     private static final Logger logger = LogManager.getLogger();
     private static NodeClient nodeClient = new NodeClient();
+    private static Map<String,InetAddress> replicatedFilesMap ;
 
     /**
      * Constructor for the NodeClient class
@@ -32,6 +39,7 @@ public class NodeClient {
         } catch (Exception e) {
             logger.error(e);
         }
+        replicatedFilesMap = new ConcurrentHashMap<>();
         previousID = Hashing.createHash(nodeName);
         nextID = previousID;
     }
@@ -340,7 +348,7 @@ public class NodeClient {
     }
 
     /**
-     * REST request to get InetAddress of file location.
+     * REST request to get InetAddress of the node containing the file location.
      * @param filename
      * @return
      * @throws IOException
@@ -418,23 +426,37 @@ public class NodeClient {
         logger.debug("Hashing my own nodeName: "+nodeName+"\nMy own hash is: "+myHash+"\nPrevious NodeID is: "+previousID+"\n Next NodeID is: "+nextID);
     }
 
+    /**
+     *
+     * @throws IOException
+     * @throws InterruptedException
+     */
     public void listOfFiles () throws IOException, InterruptedException {
 
-        File folder = new File("/home/pi/files/");
+        File folder = new File("/home/pi/localFiles/");
         File[] listOfFiles = folder.listFiles();
 
         for (File file : listOfFiles) {
             if (file.isFile()) {
                 String name = file.getName();
-                Integer fileHash = Hashing.createHash(name);
                 JSONObject json = new JSONObject();
                 json.put("typeOfMsg", "replicationStart");
                 json.put("typeOfNode", "CL");
-                json.put("fileHash", fileHash);
+                json.put("fileName", name);
                 sendUnicastMessage(nsIP, json);
+
 
             }
         }
+
+    }
+
+
+    public void fileLocationReplyHandler(JSONObject json)  {
+
+        InetAddress replicationIp = (InetAddress) json.get("replicationAddress");
+
+
 
     }
 
