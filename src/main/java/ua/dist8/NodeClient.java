@@ -487,16 +487,22 @@ public class NodeClient {
     public void replicationStart()
     {
         try {
+            logger.info("Starting replication process.");
             File folder = new File("/home/pi/localFiles/");
             File[] listOfFiles = folder.listFiles();
             if(listOfFiles != null) {
                 for (File file : listOfFiles) {
+                    logger.info("replicating file "+file.getName());
                     InetAddress address = fileRequest(file.getName());
                     if(address.equals(InetAddress.getLocalHost())){
                         address = nodeRequest(previousID);
                     }
                     FileTransfer.sendFile(address, file.getPath(), "replication");
+                    logger.info("File successfully replicated.");
                 }
+            }
+            else{
+                logger.warn("No local files to replicate.");
             }
         } catch (Exception e){
             logger.error(e);
