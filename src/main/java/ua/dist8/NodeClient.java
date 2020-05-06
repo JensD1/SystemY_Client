@@ -11,7 +11,9 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 
 import java.net.*;
+import java.util.Map;
 import java.util.Scanner;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 
 public class NodeClient {
@@ -19,9 +21,11 @@ public class NodeClient {
     private Integer nextID;
     private Integer previousID;
     private InetAddress nsIP;
-    private Semaphore sem = new Semaphore(1);
+    private static Semaphore sendingSem = new Semaphore(1);
+    private static Semaphore fileSem = new Semaphore(1);
     private static final Logger logger = LogManager.getLogger();
     private static NodeClient nodeClient = new NodeClient();
+    private static Map<String, InetAddress> replicatedFilesMap;
 
     /**
      * Constructor for the NodeClient class
@@ -32,6 +36,7 @@ public class NodeClient {
         } catch (Exception e) {
             logger.error(e);
         }
+        replicatedFilesMap = new ConcurrentHashMap<>();
         previousID = Hashing.createHash(nodeName);
         nextID = previousID;
     }
@@ -168,14 +173,14 @@ public class NodeClient {
      */
     public void sendUnicastMessage(InetAddress toSend,JSONObject json){
         try {
-            sem.acquire();
+            sendingSem.acquire();
             Socket socket = new Socket(toSend, 5000);
             OutputStream outputStream = socket.getOutputStream();
             outputStream.write(json.toString().getBytes());
             outputStream.flush();
             outputStream.close();
             socket.close();
-            sem.release();
+            sendingSem.release();
         } catch(Exception e){
             logger.error(e);
         }
@@ -404,5 +409,39 @@ public class NodeClient {
     public void printNeighbours(){
         Integer myHash = Hashing.createHash(nodeName);
         logger.debug("Hashing my own nodeName: "+nodeName+"\nMy own hash is: "+myHash+"\nPrevious NodeID is: "+previousID+"\n Next NodeID is: "+nextID);
+    }
+
+    public void fileRequest(Socket clientSocket){
+        // todo finish this method.
+    }
+
+    public void receiveReplication(InputStream inputStream, JSONObject json){
+        try {
+            byte[] contents = new byte[10000];
+            String fileName = json.getString("fileName");
+            logger.info("We will receive a replicated file "+ fileName);
+            //Initialize the FileOutputStream to the output file's full path.
+            fileSem.acquire();
+            FileOutputStream fos = new FileOutputStream("/home/pi/replicatedFiles/" + fileName); // todo make sure that this folder exists
+            BufferedOutputStream bos = new BufferedOutputStream(fos);
+            fileSem.release();
+
+            //Number of bytes read in one read() call
+            int bytesRead = 0;
+            logger.info("Starting to write the file to: /home/pi/replicatedFiles/" + fileName);
+            while ((bytesRead = inputStream.read(contents)) != -1) // -1 ==> no data left to read.
+                fileSem.acquire();
+                bos.write(contents, 0, bytesRead); // content, offset, how many bytes are read.
+                fileSem.release();
+            fileSem.acquire();
+            bos.flush();
+            bos.close();
+            fos.close();
+            fileSem.release();
+
+            logger.info("File saved successfully!");
+        } catch(Exception e){
+            logger.error(e);
+        }
     }
 }
