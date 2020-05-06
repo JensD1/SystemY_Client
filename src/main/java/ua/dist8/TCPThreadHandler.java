@@ -1,6 +1,5 @@
 package ua.dist8;
 
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
@@ -51,15 +50,20 @@ public class TCPThreadHandler extends Thread {
                     case "replicationStart" : {
                         NodeClient nodeClient = NodeClient.getInstance();
                         if (json.getString("typeOfNode").equals("NS")) {
-                            nodeClient.fileLocationReplyHandler(json);
+                            //nodeClient.fileLocationReplyHandler(json);
                         }
+                    }
 
+                    case "removeReplicatedFile" : {
 
+                        NodeClient.getInstance().removeReplicatedFile(json.getString("fileName"));
                     }
                 }
             }
+
             clientInput.close();
             clientSocket.close();
+
         } catch (Exception e){
             e.printStackTrace();
         }

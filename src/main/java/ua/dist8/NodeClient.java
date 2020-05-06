@@ -452,11 +452,25 @@ public class NodeClient {
     }
 
 
-    public void fileLocationReplyHandler(JSONObject json)  {
+    public static Map<String,InetAddress> getReplicatedFilesMap(){
 
-        InetAddress replicationIp = (InetAddress) json.get("replicationAddress");
+        return replicatedFilesMap;
 
+    }
 
+    public void removeReplicatedFile(String fileName) {
+
+        try {
+            File file = new File("/home/pi/replicatedFiles/" + fileName);
+            boolean isDeleted = file.delete();
+            if (isDeleted){
+
+                logger.trace("Replicated file: "+fileName+ " is successfully deleted");
+            }
+            else logger.error("Replicated file: " +fileName+ " is not successfully deleted");
+        } catch (Exception e) {
+            logger.error(e);
+        }
 
     }
 
