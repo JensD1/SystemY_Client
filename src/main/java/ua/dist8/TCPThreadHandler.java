@@ -12,6 +12,7 @@ public class TCPThreadHandler extends Thread {
 
     private Socket clientSocket;
     private static final Logger logger = LogManager.getLogger();
+
     TCPThreadHandler(Socket clientSocket){
         this.clientSocket = clientSocket;
     }
@@ -36,9 +37,16 @@ public class TCPThreadHandler extends Thread {
                         nodeClient.receivedShutdown(json);
                         break;
                     }
-                    case "fileRequest":
-                        //todo
+                    case "fileRequest": {
+                        NodeClient nodeClient = NodeClient.getInstance();
+                        nodeClient.fileRequest(clientSocket); // todo finish this method.
                         break;
+                    }
+                    case "replication": {
+                        NodeClient nodeClient = NodeClient.getInstance();
+                        nodeClient.receiveReplication(clientInput, json); // todo finish this method.
+                        break;
+                    }
                     case "multicastReply": {
                         NodeClient nodeClient = NodeClient.getInstance();
                         if (json.getString("typeOfNode").equals("NS")) {
