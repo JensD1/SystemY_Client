@@ -43,6 +43,7 @@ public class TCPThreadHandler extends Thread {
                         break;
                     }
                     case "replication": {
+                        logger.info("Received a replication message.");
                         NodeClient nodeClient = NodeClient.getInstance();
                         nodeClient.receiveReplication(clientInput, json);
                         break;
@@ -56,6 +57,8 @@ public class TCPThreadHandler extends Thread {
                         }
                         break;
                     }
+                    default:
+                        logger.error("Received a wrong typeOfMessage!");
                 }
             }
             clientInput.close();
