@@ -405,4 +405,8 @@ public class NodeClient {
         Integer myHash = Hashing.createHash(nodeName);
         logger.debug("Hashing my own nodeName: "+nodeName+"\nMy own hash is: "+myHash+"\nPrevious NodeID is: "+previousID+"\n Next NodeID is: "+nextID);
     }
+
+    public String getHostName(){
+        return nodeName;
+    }
 }

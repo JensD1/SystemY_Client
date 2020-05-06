@@ -2,6 +2,10 @@ package ua.dist8;
 
 
 
+import jade.core.Profile;
+import jade.core.ProfileImpl;
+import jade.wrapper.AgentContainer;
+import jade.wrapper.AgentController;
 import org.json.JSONException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -14,14 +18,40 @@ import java.util.Scanner;
 public class NodeApplication {
 
     private static final Logger logger = LogManager.getLogger();
-    public static void main(String[] args) throws IOException, JSONException, InterruptedException {
+    public static void main(String[] args) throws IOException, JSONException {
         boolean running = true;
         NodeClient nodeClient = NodeClient.getInstance();
-
         TCPListener tcpListener = null;
         UDPListener udpListener = null;
         String fileName;
         InetAddress address;
+        jade.core.Runtime runtime = jade.core.Runtime.instance();
+
+
+        //Create a Profile, where the launch arguments are stored
+        Profile profile = new ProfileImpl();
+        AgentContainer container = null;
+        profile.setParameter(Profile.CONTAINER_NAME, "TestContainer");
+        profile.setParameter(Profile.MAIN_HOST, "host2");//namingserver will have the main container and is located at host 2
+
+        String name = nodeClient.getHostName();
+
+        try {
+            container = runtime.createAgentContainer(profile);
+        }catch(Exception e){
+            logger.error(e);
+            logger.error("Unable to connect to the main container on the NamingServer..");
+        }
+        try {
+            AgentController ac = container.createNewAgent( name, "NodeAgent", null );
+            ac.start();
+        }
+        catch (Exception e){
+            logger.error(e);
+        }
+
+
+
         Scanner scanner = new Scanner(System.in);
         logger.info("This is version 2.5.6");
         logger.info("Welcome to the client test application!");
