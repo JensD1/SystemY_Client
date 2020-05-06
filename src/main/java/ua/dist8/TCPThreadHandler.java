@@ -39,12 +39,12 @@ public class TCPThreadHandler extends Thread {
                     }
                     case "fileRequest": {
                         NodeClient nodeClient = NodeClient.getInstance();
-                        nodeClient.fileRequest(clientSocket); // todo finish this method.
+                        //nodeClient.fileRequest(String fileName); // todo finish this method.
                         break;
                     }
                     case "replication": {
                         NodeClient nodeClient = NodeClient.getInstance();
-                        nodeClient.receiveReplication(clientInput, json); // todo finish this method.
+                        nodeClient.receiveReplication(clientInput, json);
                         break;
                     }
                     case "multicastReply": {
