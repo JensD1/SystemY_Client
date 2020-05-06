@@ -28,7 +28,7 @@ public class FileTransfer {
      * @param typeOfMessage contains which type of message this is.
      *                      This should be either "replication" of "fileRequest".
      */
-    public void sendFile(InetAddress toSend, String filePath, String typeOfMessage){
+    static public void sendFile(InetAddress toSend, String filePath, String typeOfMessage){
         try {
             // Send the json object first so the other node knows what type of message this is.
             logger.info("Sending a file to: " + toSend);

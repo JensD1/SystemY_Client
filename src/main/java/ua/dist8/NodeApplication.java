@@ -59,6 +59,7 @@ public class NodeApplication {
                         udpListener.start();
                     }
                     nodeClient.multicast();
+                    nodeClient.replicationStart();
                     break;
                 case "!disconnect":
                     try {

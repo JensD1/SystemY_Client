@@ -375,7 +375,6 @@ public class NodeClient {
         String hostName = nsIP.getHostAddress();
         String url ="http://"+hostName+":8080/fileRequest?filename=" + filename;
         logger.debug("Trying to connect with "+url);
-        //String url ="http://host2/fileRequest?filename=" + filename;
         HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
 
         connection.setRequestMethod("GET");
@@ -403,6 +402,46 @@ public class NodeClient {
     }
 
     /**
+     * REST request to get InetAddress of node location.
+     * @param nodeHash
+     * @return
+     * @throws IOException
+     */
+    public InetAddress nodeRequest(Integer nodeHash) throws IOException {
+        if (nsIP == null){
+            logger.warn("Not connected to any NameServer, Please use !connect before requesting a file");
+            return null;
+        }
+        String hostName = nsIP.getHostAddress();
+        String url ="http://"+hostName+":8080/nodeRequest?nodeHash=" + nodeHash;
+        logger.debug("Trying to connect with "+url);
+        HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+
+        connection.setRequestMethod("GET");
+
+        int responseCode = connection.getResponseCode();
+        logger.debug("Connecting to " + url +"Response code = "+ responseCode);
+        if(responseCode == 200){ //connection successful
+            String response = "";
+            Scanner scanner = new Scanner(connection.getInputStream());
+            while(scanner.hasNextLine()){
+                response += scanner.nextLine();
+                response += "\n";
+            }
+            scanner.close();
+            // returns a string
+            JSONObject jsonResponse = new JSONObject(response);
+            String ip = jsonResponse.getString("inetAddress");
+            logger.debug("Hostname of node is: "+ip);
+            return InetAddress.getByName(ip);
+        }
+        logger.error("Request failed!");
+
+        // an error happened
+        return null;
+    }
+
+    /**
      * Print the neighbours of this node.
      */
 
@@ -411,9 +450,9 @@ public class NodeClient {
         logger.debug("Hashing my own nodeName: "+nodeName+"\nMy own hash is: "+myHash+"\nPrevious NodeID is: "+previousID+"\n Next NodeID is: "+nextID);
     }
 
-    public void fileRequest(Socket clientSocket){
+    //public void fileRequest(Socket clientSocket){
         // todo finish this method.
-    }
+    //}
 
     public void receiveReplication(InputStream inputStream, JSONObject json){
         try {
@@ -444,4 +483,24 @@ public class NodeClient {
             logger.error(e);
         }
     }
+
+    public void replicationStart()
+    {
+        try {
+            File folder = new File("/home/pi/localFiles/");
+            File[] listOfFiles = folder.listFiles();
+            if(listOfFiles != null) {
+                for (File file : listOfFiles) {
+                    InetAddress address = fileRequest(file.getName());
+                    if(address.equals(InetAddress.getLocalHost())){
+                        address = nodeRequest(previousID);
+                    }
+                    FileTransfer.sendFile(address, file.getPath(), "replication");
+                }
+            }
+        } catch (Exception e){
+            logger.error(e);
+        }
+    }
+
 }
