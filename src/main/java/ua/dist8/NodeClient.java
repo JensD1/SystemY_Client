@@ -471,7 +471,7 @@ public class NodeClient {
             if(!folder.exists()){
                 boolean succes = folder.mkdir();
                 if(!succes){
-                    throw new Exception("Could not create directory " + folder + "!");
+                    throw new Exception("Could not create directory " + folder.getName() + "!");
                 }
             }
             //Initialize the FileOutputStream to the output file's full path.
@@ -529,9 +529,9 @@ public class NodeClient {
 
             File folder = new File("/home/pi/logFiles/");
             if(!folder.exists()){
-                boolean succes = folder.mkdir();
-                if(!succes){
-                    throw new Exception("Could not create directory " + folder + "!");
+                boolean success = folder.mkdir();
+                if(!success){
+                    throw new Exception("Could not create directory " + folder.getName() + "!");
                 }
             }
 
@@ -556,9 +556,9 @@ public class NodeClient {
             logger.info("Starting replication process.");
             File folder = new File("/home/pi/localFiles/");
             if(!folder.exists()){
-                boolean succes = folder.mkdir();
-                if(!succes){
-                    throw new Exception("Could not create directory " + folder + "!");
+                boolean success = folder.mkdir();
+                if(!success){
+                    throw new Exception("Could not create directory " + folder.getName() + "!");
                 }
             }
             File[] listOfFiles = folder.listFiles();
@@ -571,14 +571,14 @@ public class NodeClient {
                     }
                     FileTransfer.sendFile(address, file.getPath(), "replication");
                     logger.info("File successfully replicated.");
-                    logger.info("Creating a log file for file " + file.getName());
-                    createLogFile(address, file.getName());
+                    logger.info("Creating a log file for file " + file.getName() + "Log");
+                    createLogFile(address, file.getName() + "Log");
                     logger.info("Sending log file to " + address);
-                    FileTransfer.sendFile(address, "/home/pi/logFiles/" + file.getName(), "log");
-                    File logfile = new File("/home/pi/logFiles/" + file.getName());
-                    boolean succes = logfile.delete();
-                    if(!succes){
-                        throw new Exception("Could not delete logFile " + logfile + "!");
+                    FileTransfer.sendFile(address, "/home/pi/logFiles/" + file.getName() + "Log", "log");
+                    File logfile = new File("/home/pi/logFiles/" + file.getName() + "Log");
+                    boolean success = logfile.delete();
+                    if(!success){
+                        throw new Exception("Could not delete logFile " + logfile.getName() + "!");
                     }
                     logger.info("Log file successfully sent!");
                 }
