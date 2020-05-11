@@ -23,7 +23,7 @@ public class FileTransfer {
      * @param toSend contains the ip address to were to send the file.
      * @param filePath contains the path to the file.
      * @param typeOfMessage contains which type of message this is.
-     *                      This should be either "replication" of "fileRequest".
+     *                      This should be either "replication", "fileRequest" or "log".
      */
     static public void sendFile(InetAddress toSend, String filePath, String typeOfMessage){
         try {

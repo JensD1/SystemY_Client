@@ -11,6 +11,7 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 
 import java.net.*;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.concurrent.ConcurrentHashMap;
@@ -454,14 +455,34 @@ public class NodeClient {
         // todo finish this method.
     //}
 
-    public void receiveReplication(InputStream inputStream, JSONObject json, OutputStream outputStream){
+    public void receiveFile(InputStream inputStream, JSONObject json, OutputStream outputStream, String type){
         try {
             byte[] contents = new byte[10000];
             String fileName = json.getString("fileName");
             logger.info("We will receive a replicated file "+ fileName);
+            File folder;
+            if(type.equals("replication")){
+                folder = new File("/home/pi/ownedFiles/");
+            }
+            else if(type.equals("log")){
+                folder = new File("/home/pi/logFiles/");
+            }
+            else throw new Exception("Wrong typeOfMsg!");
+            if(!folder.exists()){
+                boolean succes = folder.mkdir();
+                if(!succes){
+                    throw new Exception("Could not create directory " + folder + "!");
+                }
+            }
             //Initialize the FileOutputStream to the output file's full path.
             fileSem.acquire();
-            FileOutputStream fos = new FileOutputStream("/home/pi/ownedFiles/" + fileName); // todo make sure that this folder exists
+            FileOutputStream fos;
+            if(type.equals("replication")) {
+                fos = new FileOutputStream("/home/pi/ownedFiles/" + fileName);
+            }
+            else{
+                fos = new FileOutputStream("/home/pi/logFiles/" + fileName);
+            }
             BufferedOutputStream bos = new BufferedOutputStream(fos);
             fileSem.release();
 
@@ -471,7 +492,12 @@ public class NodeClient {
 
             //Number of bytes read in one read() call
             int bytesRead = 0;
-            logger.info("Starting to write the file to: /home/pi/ownedFiles/" + fileName);
+            if(type.equals("replication")) {
+                logger.info("Starting to write the file to: /home/pi/ownedFiles/" + fileName);
+            }
+            else{
+                logger.info("Starting to write the file to: /home/pi/logFiles/" + fileName);
+            }
             while ((bytesRead = inputStream.read(contents)) != -1) { // -1 ==> no data left to read.
                 fileSem.acquire();
                 logger.debug("Before write");
@@ -494,11 +520,47 @@ public class NodeClient {
         }
     }
 
+    public void createLogFile(InetAddress inet, String fileName){
+        try {
+            JSONObject json = new JSONObject();
+            json.put("owner", inet.getHostName());
+            json.put("isDownloaded", false);
+            json.put("downloadLocations", new ArrayList<String>());
+
+            File folder = new File("/home/pi/logFiles/");
+            if(!folder.exists()){
+                boolean succes = folder.mkdir();
+                if(!succes){
+                    throw new Exception("Could not create directory " + folder + "!");
+                }
+            }
+
+            byte[] contents = json.toString().getBytes();
+            int bytesLength = contents.length;
+            fileSem.acquire();
+            FileOutputStream fos = new FileOutputStream("/home/pi/logFiles/" + fileName); // todo make sure that this folder exists
+            BufferedOutputStream bos = new BufferedOutputStream(fos);
+            bos.write(contents, 0, bytesLength); // content, offset, how many bytes are read.
+            bos.flush();
+            bos.close();
+            fos.close();
+            fileSem.release();
+        } catch (Exception e){
+            logger.error(e);
+        }
+    }
+
     public void replicationStart()
     {
         try {
             logger.info("Starting replication process.");
             File folder = new File("/home/pi/localFiles/");
+            if(!folder.exists()){
+                boolean succes = folder.mkdir();
+                if(!succes){
+                    throw new Exception("Could not create directory " + folder + "!");
+                }
+            }
             File[] listOfFiles = folder.listFiles();
             if(listOfFiles != null) {
                 for (File file : listOfFiles) {
@@ -509,6 +571,16 @@ public class NodeClient {
                     }
                     FileTransfer.sendFile(address, file.getPath(), "replication");
                     logger.info("File successfully replicated.");
+                    logger.info("Creating a log file for file " + file.getName());
+                    createLogFile(address, file.getName());
+                    logger.info("Sending log file to " + address);
+                    FileTransfer.sendFile(address, "/home/pi/logFiles/" + file.getName(), "log");
+                    File logfile = new File("/home/pi/logFiles/" + file.getName());
+                    boolean succes = logfile.delete();
+                    if(!succes){
+                        throw new Exception("Could not delete logFile " + logfile + "!");
+                    }
+                    logger.info("Log file successfully sent!");
                 }
             }
             else{
