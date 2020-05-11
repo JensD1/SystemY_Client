@@ -456,7 +456,7 @@ public class NodeClient {
 
     public void receiveReplication(InputStream inputStream, JSONObject json){
         try {
-            byte[] contents = new byte[10000];
+            byte[] contents = new byte[100000];
             String fileName = json.getString("fileName");
             logger.info("We will receive a replicated file "+ fileName);
             //Initialize the FileOutputStream to the output file's full path.
@@ -495,7 +495,7 @@ public class NodeClient {
                     logger.info("replicating file "+file.getName());
                     InetAddress address = fileRequest(file.getName());
                     if(address.equals(InetAddress.getLocalHost())){
-                        address = nodeRequest(previousID);
+                        address = nodeRequest(previousID);  // todo in case it is still to your own ip, make sure that it won't send.
                     }
                     FileTransfer.sendFile(address, file.getPath(), "replication");
                     logger.info("File successfully replicated.");
