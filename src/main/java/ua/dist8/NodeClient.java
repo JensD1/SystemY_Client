@@ -475,7 +475,7 @@ public class NodeClient {
             //Number of bytes read in one read() call
             int bytesRead = 0;
             logger.info("Starting to write the file to: /home/pi/ownedFiles/" + fileName);
-            while ((bytesRead = inputStream.read(contents)) != -1) // -1 ==> no data left to read.
+            while ((bytesRead = inputStream.read(contents)) != -1) { // -1 ==> no data left to read.
                 fileSem.acquire();
                 logger.trace("Before write");
                 logger.trace("bytesRead: " + bytesRead);
@@ -483,6 +483,7 @@ public class NodeClient {
                 bos.write(contents, 0, bytesRead); // content, offset, how many bytes are read.
                 logger.trace("After write");
                 fileSem.release();
+            }
             fileSem.acquire();
             bos.flush();
             bos.close();
