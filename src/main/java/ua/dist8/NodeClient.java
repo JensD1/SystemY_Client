@@ -248,7 +248,8 @@ public class NodeClient {
         else{
             logger.error("Something went wrong, please try again...");
         }
-        nodeClient.replicationStart();
+        if(!previousID.equals(Hashing.createHash(nodeName)) && !nextID.equals(Hashing.createHash(nodeName)))
+            nodeClient.replicationStart();
     }
 
     /***
@@ -456,21 +457,23 @@ public class NodeClient {
 
     public void receiveReplication(InputStream inputStream, JSONObject json){
         try {
-            byte[] contents = new byte[100000];
+            byte[] contents = new byte[10000];
             String fileName = json.getString("fileName");
             logger.info("We will receive a replicated file "+ fileName);
             //Initialize the FileOutputStream to the output file's full path.
             fileSem.acquire();
-            FileOutputStream fos = new FileOutputStream("/home/pi/replicatedFiles/" + fileName); // todo make sure that this folder exists
+            FileOutputStream fos = new FileOutputStream("/home/pi/ownedFiles/" + fileName); // todo make sure that this folder exists
             BufferedOutputStream bos = new BufferedOutputStream(fos);
             fileSem.release();
 
             //Number of bytes read in one read() call
             int bytesRead = 0;
-            logger.info("Starting to write the file to: /home/pi/replicatedFiles/" + fileName);
+            logger.info("Starting to write the file to: /home/pi/ownedFiles/" + fileName);
             while ((bytesRead = inputStream.read(contents)) != -1) // -1 ==> no data left to read.
                 fileSem.acquire();
+                logger.trace("Before write");
                 bos.write(contents, 0, bytesRead); // content, offset, how many bytes are read.
+                logger.trace("After write");
                 fileSem.release();
             fileSem.acquire();
             bos.flush();
