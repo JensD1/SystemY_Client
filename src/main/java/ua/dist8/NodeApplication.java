@@ -27,7 +27,8 @@ public class NodeApplication {
         InetAddress address;
         jade.core.Runtime runtime = jade.core.Runtime.instance();
 
-
+        //initialize the local list of owned files
+        nodeClient.initLocalList();
         //Create a Profile, where the launch arguments are stored
         Profile profile = new ProfileImpl();
         AgentContainer container = null;

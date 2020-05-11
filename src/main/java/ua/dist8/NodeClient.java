@@ -4,14 +4,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONException;
 import org.json.JSONObject;
-
 import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.net.UnknownHostException;
-
 import java.net.*;
 import java.util.Scanner;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 
 public class NodeClient {
@@ -22,6 +20,8 @@ public class NodeClient {
     private Semaphore sem = new Semaphore(1);
     private static final Logger logger = LogManager.getLogger();
     private static NodeClient nodeClient = new NodeClient();
+    private ConcurrentHashMap<String,String> localMap;
+
 
     /**
      * Constructor for the NodeClient class
@@ -408,5 +408,25 @@ public class NodeClient {
 
     public String getHostName(){
         return nodeName;
+    }
+
+    /**
+     * Init the local list with owned files and set locks to open
+     */
+    public void initLocalList(){
+        File folder = new File("/home/pi/localFiles/");
+        File[] listOfFiles = folder.listFiles();
+
+        for (File file : listOfFiles) {
+            if (file.isFile()) {
+                String fileName = file.getName();
+                localMap.put(fileName,"Open");
+
+            }
+        }
+    }
+
+    public ConcurrentHashMap<String, String> getLocalMap() {
+        return localMap;
     }
 }

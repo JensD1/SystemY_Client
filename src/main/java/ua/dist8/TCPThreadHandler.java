@@ -21,6 +21,8 @@ public class TCPThreadHandler extends Thread {
      * Checks if packet concerns shutdown.
      * If so, it calls the method to remove this node from the hashmap.
      */
+    //todo
+    //add a handler for the agent. start a new agent, update the agent and send it to next agent
     public void run() {
         try {
             InputStream clientInput = clientSocket.getInputStream();
