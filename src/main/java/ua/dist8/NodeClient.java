@@ -248,7 +248,7 @@ public class NodeClient {
         else{
             logger.error("Something went wrong, please try again...");
         }
-
+        nodeClient.replicationStart();
     }
 
     /***

@@ -23,7 +23,7 @@ public class NodeApplication {
         String fileName;
         InetAddress address;
         Scanner scanner = new Scanner(System.in);
-        logger.info("This is version 3.1.2");
+        logger.info("This is version 3.1.3");
         logger.info("Welcome to the client test application!");
         while(running){
             logger.info("Please enter a command. Type !help for a list of commands: ");
@@ -59,7 +59,6 @@ public class NodeApplication {
                         udpListener.start();
                     }
                     nodeClient.multicast();
-                    nodeClient.replicationStart();
                     break;
                 case "!disconnect":
                     try {
