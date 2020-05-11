@@ -454,7 +454,7 @@ public class NodeClient {
         // todo finish this method.
     //}
 
-    public void receiveReplication(InputStream inputStream, JSONObject json){
+    public void receiveReplication(InputStream inputStream, JSONObject json, Socket socket){
         try {
             byte[] contents = new byte[10000];
             String fileName = json.getString("fileName");
@@ -464,6 +464,11 @@ public class NodeClient {
             FileOutputStream fos = new FileOutputStream("/home/pi/ownedFiles/" + fileName); // todo make sure that this folder exists
             BufferedOutputStream bos = new BufferedOutputStream(fos);
             fileSem.release();
+
+            OutputStream outputStream = socket.getOutputStream();
+
+            logger.info("send JSON received message.");
+            outputStream.write(0);
 
             //Number of bytes read in one read() call
             int bytesRead = 0;

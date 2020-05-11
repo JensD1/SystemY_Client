@@ -44,10 +44,14 @@ public class FileTransfer {
             sendingSem.acquire();
             Socket socket = new Socket(toSend, 5000);
             OutputStream outputStream = socket.getOutputStream();
+            InputStream inputStream = socket.getInputStream();
             outputStream.write(json.toString().getBytes());
             outputStream.flush();
             sendingSem.release();
             logger.info("JSON is successfully sent.");
+
+            logger.info("Waiting till JSON is received by the other side.");
+            inputStream.read();
 
             byte[] contents;
             readSem.acquire();

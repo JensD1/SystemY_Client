@@ -45,7 +45,7 @@ public class TCPThreadHandler extends Thread {
                     case "replication": {
                         logger.info("Received a replication message.");
                         NodeClient nodeClient = NodeClient.getInstance();
-                        nodeClient.receiveReplication(clientInput, json);
+                        nodeClient.receiveReplication(clientInput, json, clientSocket);
                         break;
                     }
                     case "multicastReply": {
