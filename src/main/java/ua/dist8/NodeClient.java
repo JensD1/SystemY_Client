@@ -465,12 +465,12 @@ public class NodeClient {
             BufferedOutputStream bos = new BufferedOutputStream(fos);
             fileSem.release();
 
-            OutputStream outputStream = socket.getOutputStream();
-
-            logger.info("send JSON received message.");
-            sendingSem.acquire();
-            outputStream.write(0);
-            sendingSem.release();
+//            OutputStream outputStream = socket.getOutputStream();
+//
+//            logger.info("send JSON received message.");
+//            sendingSem.acquire();
+//            outputStream.write(0);
+//            sendingSem.release();
 
             //Number of bytes read in one read() call
             int bytesRead = 0;
@@ -492,10 +492,10 @@ public class NodeClient {
 
             logger.info("File saved successfully!");
 
-            logger.info("send file received message.");
-            sendingSem.acquire();
-            outputStream.write(0);
-            sendingSem.release();
+//            logger.info("send file received message.");
+//            sendingSem.acquire();
+//            outputStream.write(0);
+//            sendingSem.release();
 
         } catch(Exception e){
             logger.error(e);

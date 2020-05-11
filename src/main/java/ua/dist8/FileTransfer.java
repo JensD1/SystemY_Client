@@ -44,15 +44,15 @@ public class FileTransfer {
             sendingSem.acquire();
             Socket socket = new Socket(toSend, 5000);
             OutputStream outputStream = socket.getOutputStream();
-            InputStream inputStream = socket.getInputStream();
             outputStream.write(json.toString().getBytes());
             outputStream.flush();
             sendingSem.release();
             logger.info("JSON is successfully sent.");
 
-            logger.info("Waiting till JSON is received by the other side.");
-            inputStream.read();
-            logger.info("JSON is received by the other side, continuing our transmission...");
+//            InputStream inputStream = socket.getInputStream();
+//            logger.info("Waiting till JSON is received by the other side.");
+//            inputStream.read();
+//            logger.info("JSON is received by the other side, continuing our transmission...");
 
             byte[] contents;
             readSem.acquire();
@@ -79,14 +79,15 @@ public class FileTransfer {
                 logger.info("Sending file ... "+(current*100)/fileLength+"% complete!");
             }
 
-            logger.info("Waiting till file is received by the other side.");
-            inputStream.read();
-            logger.info("file is received by the other side");
+//            logger.info("Waiting till file is received by the other side.");
+//            inputStream.read();
+//            logger.info("file is received by the other side");
+//            inputStream.close();
 
             sendingSem.acquire();
             outputStream.flush();
             outputStream.close();
-            inputStream.close();
+
             socket.close();
             sendingSem.release();
             readSem.acquire();
