@@ -14,8 +14,8 @@ public class replicationUpdateThread extends Thread{
 
     @Override
     /***
-     * Constantly listens to TCP requests.
-     * When there is an incoming request, it generates a new thread to handle it.
+     * This method checks at regular interval if there are new/deleted local files.
+     * If change has occurred, then the replication map will be updated. Other nodes will be also notified if a file is locally deleted.
      */
     public void run() {
 
@@ -63,6 +63,7 @@ public class replicationUpdateThread extends Thread{
                     JSONObject json = new JSONObject();
 
                     json.put("typeOfMsg","removeReplicatedFile");
+                    json.put("typeOfDest","owner");
                     json.put("fileName",hashKey);
                     try {
                         NodeClient.getInstance().sendUnicastMessage(replicatedFilesMap.get(hashKey),json);

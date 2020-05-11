@@ -11,10 +11,7 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 
 import java.net.*;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Scanner;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -458,16 +455,61 @@ public class NodeClient {
 
     }
 
-    public void removeReplicatedFile(String fileName) {
+    /***
+     * Delete a replicated file on this node with its logfile if it is an owner
+     * @param fileName The name of the file that must be removed
+     * @param typeOfDest The type of the destination
+     */
+    public void removeReplicatedFile(String fileName, String typeOfDest) {
 
         try {
-            File file = new File("/home/pi/replicatedFiles/" + fileName);
-            boolean isDeleted = file.delete();
-            if (isDeleted){
 
-                logger.trace("Replicated file: "+fileName+ " is successfully deleted");
+            if(typeOfDest.equals("owner")) {
+
+                File file = new File("/home/pi/logFiles/" +fileName+ "Log");
+                JSONObject jsonLog = new JSONObject(file);
+                ArrayList<String> downloadLocations = (ArrayList<String>) jsonLog.get("downloadLocations");
+                JSONObject json = new JSONObject();
+                json.put("typeOfMsg","removeReplicatedFile");
+                json.put("typeOfDest","download");
+                json.put("fileName",fileName);
+
+                for (String hostName : downloadLocations){
+
+                    sendUnicastMessage(InetAddress.getByName(hostName), json);
+
+                }
+
+                file = new File("/home/pi/ownedFiles/" + fileName);
+                boolean isDeleted = file.delete();
+                if (isDeleted){
+
+                    logger.trace("Replicated file: "+fileName+ " is successfully deleted");
+                }
+                else logger.error("Replicated file: " +fileName+ " is not successfully deleted");
+
+                file = new File("/home/pi/logFiles/" +fileName+ "Log");
+                isDeleted = file.delete();
+                if (isDeleted){
+
+                    logger.trace("Log file: "+fileName+ " is successfully deleted");
+                }
+                else logger.error("Log file: " +fileName+ " is not successfully deleted");
             }
-            else logger.error("Replicated file: " +fileName+ " is not successfully deleted");
+
+
+            if(typeOfDest.equals("download")) {
+
+                File file = new File("/home/pi/replicatedFiles/" +fileName);
+                boolean isDeleted = file.delete();
+                if (isDeleted){
+
+                    logger.trace("Replicated file: "+fileName+ " is successfully deleted");
+                }
+                else logger.error("Replicated file: " +fileName+ " is not successfully deleted");
+
+            }
+
         } catch (Exception e) {
             logger.error(e);
         }
