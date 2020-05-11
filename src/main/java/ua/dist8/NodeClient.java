@@ -454,7 +454,7 @@ public class NodeClient {
         // todo finish this method.
     //}
 
-    public void receiveReplication(InputStream inputStream, JSONObject json, Socket socket){
+    public void receiveReplication(InputStream inputStream, JSONObject json, OutputStream outputStream){
         try {
             byte[] contents = new byte[10000];
             String fileName = json.getString("fileName");
@@ -465,23 +465,20 @@ public class NodeClient {
             BufferedOutputStream bos = new BufferedOutputStream(fos);
             fileSem.release();
 
-//            OutputStream outputStream = socket.getOutputStream();
-//
-//            logger.info("send JSON received message.");
-//            sendingSem.acquire();
-//            outputStream.write(0);
-//            sendingSem.release();
+            logger.info("Send JSON reply.");
+            outputStream.write(0);
+            logger.info("JSON reply sent.");
 
             //Number of bytes read in one read() call
             int bytesRead = 0;
             logger.info("Starting to write the file to: /home/pi/ownedFiles/" + fileName);
             while ((bytesRead = inputStream.read(contents)) != -1) { // -1 ==> no data left to read.
                 fileSem.acquire();
-                logger.trace("Before write");
-                logger.trace("bytesRead: " + bytesRead);
-                logger.trace("bytesRead: " + contents.length);
+                logger.debug("Before write");
+                logger.debug("bytesRead: " + bytesRead);
+                logger.debug("bytesRead: " + contents.length);
                 bos.write(contents, 0, bytesRead); // content, offset, how many bytes are read.
-                logger.trace("After write");
+                logger.debug("After write");
                 fileSem.release();
             }
             fileSem.acquire();
@@ -491,11 +488,6 @@ public class NodeClient {
             fileSem.release();
 
             logger.info("File saved successfully!");
-
-//            logger.info("send file received message.");
-//            sendingSem.acquire();
-//            outputStream.write(0);
-//            sendingSem.release();
 
         } catch(Exception e){
             logger.error(e);

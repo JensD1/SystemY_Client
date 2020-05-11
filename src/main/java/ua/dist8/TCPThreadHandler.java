@@ -6,6 +6,7 @@ import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
 
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.Socket;
 
 public class TCPThreadHandler extends Thread {
@@ -45,7 +46,9 @@ public class TCPThreadHandler extends Thread {
                     case "replication": {
                         logger.info("Received a replication message.");
                         NodeClient nodeClient = NodeClient.getInstance();
-                        nodeClient.receiveReplication(clientInput, json, clientSocket);
+                        OutputStream clientOutput = clientSocket.getOutputStream();
+                        nodeClient.receiveReplication(clientInput, json, clientOutput);
+                        clientOutput.close();
                         break;
                     }
                     case "multicastReply": {
