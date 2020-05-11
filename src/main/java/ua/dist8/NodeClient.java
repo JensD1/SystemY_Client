@@ -293,54 +293,154 @@ public class NodeClient {
      * @throws IOException
      * @throws JSONException
      */
-    public void shutdown () throws IOException, JSONException, InterruptedException {
+    public void shutdown (){
+        try{
 
-        Integer hash = Hashing.createHash(nodeName);
-        logger.debug("Starting shutdown procedure...");
-        //This part is for the neighboring nodes:
-        String name = nsIP.getHostAddress();
-        JSONObject neighbourJSON = new JSONObject();
-        neighbourJSON.put("typeOfMsg", "shutdown");
-        neighbourJSON.put("updateID", nextID);
-        logger.debug("Requesting neighbours from NamingServer...");
-        URL url = new URL("http://" + name + ":8080/neighbourRequest?nodeHash=" + hash);
-        HttpURLConnection con = (HttpURLConnection) url.openConnection();
-        con.setRequestMethod("GET");
-        int responseCode = con.getResponseCode();
-        logger.debug("Connecting to " + url + "Response code = " + responseCode);
-        if (responseCode == 200) { //connection successful, NS can only remove the mode if he finds the node
-            String response = "";
-            Scanner scanner = new Scanner(con.getInputStream());
-            while (scanner.hasNextLine()) {
-                response += scanner.nextLine();
-                response += "\n";
+            String name = nsIP.getHostAddress();
+            File folder = new File("/home/pi/localFiles/");
+            File[] listOfFiles = folder.listFiles();
+            for (File file : listOfFiles) {
+                if (file.isFile()) {
+                    String filename = file.getName();
+                    URL url = new URL("http://" + name + ":8080/fileRequest?filename=" + filename);
+                    HttpURLConnection con = (HttpURLConnection) url.openConnection();
+                    con.setRequestMethod("GET");
+                    int responseCode = con.getResponseCode();
+                    logger.debug("Connecting to " + url + "Response code = " + responseCode);
+                    String response = "";
+                    Scanner scanner = new Scanner(con.getInputStream());
+                    while (scanner.hasNextLine()) {
+                        response += scanner.nextLine();
+                        response += "\n";
+                    }
+                    scanner.close();
+                    con.disconnect();
+                    JSONObject responseJSON = new JSONObject(response);
+                    String destAddress = responseJSON.getString("address");
+                    JSONObject json = new JSONObject();
+                    json.put("typeOfMsg", "replicationShutdown");
+                    json.put("typeOfDest","local");
+                    json.put("typeOfNode", "CL");
+                    json.put("fileName", name);
+                    sendUnicastMessage(InetAddress.getByName(destAddress), json);
+
+
+                }
             }
-            scanner.close();
-            con.disconnect();
 
-            logger.debug("Neighbours received from NamingServer!");
-            JSONObject responseJSON = new JSONObject(response);
-            logger.debug("Sending Unicast message to neighbours..");
-            String previousNeighbor = responseJSON.getString("previousNode");
-            logger.debug("Previous host is "+ previousNeighbor);
-            sendUnicastMessage(InetAddress.getByName(previousNeighbor), neighbourJSON);
-            neighbourJSON.put("updateID", previousID);
-            String nextNeighbor = responseJSON.getString("nextNode");
-            sendUnicastMessage(InetAddress.getByName(nextNeighbor), neighbourJSON);
+            folder = new File("/home/pi/replicatedFiles/");
+            listOfFiles = folder.listFiles();
+            for (File file : listOfFiles) {
+                if (file.isFile()) {
+                    String filename = file.getName();
+                    URL url = new URL("http://" + name + ":8080/fileRequest?filename=" + filename);
+                    HttpURLConnection con = (HttpURLConnection) url.openConnection();
+                    con.setRequestMethod("GET");
+                    int responseCode = con.getResponseCode();
+                    logger.debug("Connecting to " + url + "Response code = " + responseCode);
+                    String response = "";
+                    Scanner scanner = new Scanner(con.getInputStream());
+                    while (scanner.hasNextLine()) {
+                        response += scanner.nextLine();
+                        response += "\n";
+                    }
+                    scanner.close();
+                    con.disconnect();
+                    JSONObject responseJSON = new JSONObject(response);
+                    String destAddress = responseJSON.getString("address");
+                    JSONObject json = new JSONObject();
+                    json.put("typeOfMsg", "replicationShutdown");
+                    json.put("typeOfDest","replicated");
+                    json.put("typeOfNode", "CL");
+                    json.put("fileName", name);
+                    sendUnicastMessage(InetAddress.getByName(destAddress), json);
 
-            //Sending shutdown msg to NS
-            logger.debug("Shutting down client... Asking the NamingServer to remove us from the network..");
-            JSONObject shutdownJSON = new JSONObject();
 
-            shutdownJSON.put("typeOfNode", "CL");
-            shutdownJSON.put("typeOfMsg", "shutdown");
-            shutdownJSON.put("ID", hash);
-            logger.debug("Shutdown message for ID: " + hash);
-            sendUnicastMessage(nsIP, shutdownJSON);
-            //resetting neighbourIDs
-            nextID = Hashing.createHash(nodeName);
-            previousID = nextID;
-            logger.info("Succesfuly disconnected from NamingServer!");
+                }
+            }
+
+            folder = new File("/home/pi/ownedFiles/");
+            listOfFiles = folder.listFiles();
+            for (File file : listOfFiles) {
+                if (file.isFile()) {
+                    String filename = file.getName();
+                    URL url = new URL("http://" + name + ":8080/fileRequest?filename=" + filename);
+                    HttpURLConnection con = (HttpURLConnection) url.openConnection();
+                    con.setRequestMethod("GET");
+                    int responseCode = con.getResponseCode();
+                    logger.debug("Connecting to " + url + "Response code = " + responseCode);
+                    String response = "";
+                    Scanner scanner = new Scanner(con.getInputStream());
+                    while (scanner.hasNextLine()) {
+                        response += scanner.nextLine();
+                        response += "\n";
+                    }
+                    scanner.close();
+                    con.disconnect();
+                    JSONObject responseJSON = new JSONObject(response);
+                    String destAddress = responseJSON.getString("address");
+                    JSONObject json = new JSONObject();
+                    json.put("typeOfMsg", "replicationShutdown");
+                    json.put("typeOfDest","owned");
+                    json.put("typeOfNode", "CL");
+                    json.put("fileName", name);
+                    sendUnicastMessage(InetAddress.getByName(destAddress), json);
+
+                }
+            }
+
+            Integer hash = Hashing.createHash(nodeName);
+            logger.debug("Starting shutdown procedure...");
+            //This part is for the neighboring nodes:
+            logger.info("The hostaddress of the namingserver is " + name);
+            JSONObject neighbourJSON = new JSONObject();
+            neighbourJSON.put("typeOfMsg", "shutdown");
+            neighbourJSON.put("target", "next");
+            neighbourJSON.put("updateID", nextID);
+            logger.debug("Requesting neighbours from NamingServer...");
+            URL url = new URL("http://" + name + ":8080/neighbourRequest?nodeHash=" + hash);
+            HttpURLConnection con = (HttpURLConnection) url.openConnection();
+            con.setRequestMethod("GET");
+            int responseCode = con.getResponseCode();
+            logger.debug("Connecting to " + url + "Response code = " + responseCode);
+            if (responseCode == 200) { //connection successful, NS can only remove the node if he finds it
+                String response = "";
+                Scanner scanner = new Scanner(con.getInputStream());
+                while (scanner.hasNextLine()) {
+                    response += scanner.nextLine();
+                    response += "\n";
+                }
+                scanner.close();
+                con.disconnect();
+
+                logger.debug("Neighbours received from NamingServer!");
+                JSONObject responseJSON = new JSONObject(response);
+                logger.debug("Sending Unicast message to neighbours..");
+                String previousNeighbor = responseJSON.getString("previousNode");
+                logger.debug("Previous host is " + previousNeighbor);
+                sendUnicastMessage(InetAddress.getByName(previousNeighbor), neighbourJSON);
+                neighbourJSON.put("updateID", previousID);
+                neighbourJSON.put("target", "previous");
+                String nextNeighbor = responseJSON.getString("nextNode");
+                sendUnicastMessage(InetAddress.getByName(nextNeighbor), neighbourJSON);
+
+                //Sending shutdown msg to NS
+                logger.debug("Shutting down client... Asking the NamingServer to remove us from the network..");
+                JSONObject shutdownJSON = new JSONObject();
+                shutdownJSON.put("typeOfNode", "CL");
+                shutdownJSON.put("typeOfMsg", "shutdown");
+                shutdownJSON.put("ID", hash);
+                logger.debug("Shutdown message for ID: " + hash);
+                sendUnicastMessage(nsIP, shutdownJSON);
+
+                //resetting neighbourIDs
+                nextID = Hashing.createHash(nodeName);
+                previousID = nextID;
+                logger.info("Succesfuly disconnected from NamingServer!");
+            }
+        }
+        catch (Exception e){
+            logger.error(e);
         }
     }
 
