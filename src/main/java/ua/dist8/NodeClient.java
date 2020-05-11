@@ -233,6 +233,7 @@ public class NodeClient {
         if(amountOfNodes > 0){
             logger.debug("Succesfully connected to " + nsIP.getHostName() + ". The amount of other nodes in the network = " + amountOfNodes);
             this.nsIP = nsIP; //This will save the IP-address of the NS for later use
+            nodeClient.replicationStart();
         }
         else if(amountOfNodes == 0){
             logger.debug("Succesfully connected to " + nsIP.getHostName() +". I am the only node in the network, setting next/previous ID to myself");
@@ -245,11 +246,9 @@ public class NodeClient {
             logger.debug("I am already in the network! Fetching my next and previous neighbour from NS! ");
             //todo getNeighbours
         }
-        else{
+        else {
             logger.error("Something went wrong, please try again...");
         }
-        if(!previousID.equals(Hashing.createHash(nodeName)) && !nextID.equals(Hashing.createHash(nodeName)))
-            nodeClient.replicationStart();
     }
 
     /***
@@ -498,7 +497,7 @@ public class NodeClient {
                     logger.info("replicating file "+file.getName());
                     InetAddress address = fileRequest(file.getName());
                     if(address.equals(InetAddress.getLocalHost())){
-                        address = nodeRequest(previousID);  // todo in case it is still to your own ip, make sure that it won't send.
+                        address = nodeRequest(previousID);
                     }
                     FileTransfer.sendFile(address, file.getPath(), "replication");
                     logger.info("File successfully replicated.");
