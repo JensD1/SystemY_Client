@@ -490,6 +490,12 @@ public class NodeClient {
             fileSem.release();
 
             logger.info("File saved successfully!");
+
+            logger.info("send file received message.");
+            sendingSem.acquire();
+            outputStream.write(0);
+            sendingSem.release();
+
         } catch(Exception e){
             logger.error(e);
         }

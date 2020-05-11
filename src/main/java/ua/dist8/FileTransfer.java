@@ -78,9 +78,15 @@ public class FileTransfer {
                 sendingSem.release();
                 logger.info("Sending file ... "+(current*100)/fileLength+"% complete!");
             }
+
+            logger.info("Waiting till file is received by the other side.");
+            inputStream.read();
+            logger.info("file is received by the other side");
+
             sendingSem.acquire();
             outputStream.flush();
             outputStream.close();
+            inputStream.close();
             socket.close();
             sendingSem.release();
             readSem.acquire();
