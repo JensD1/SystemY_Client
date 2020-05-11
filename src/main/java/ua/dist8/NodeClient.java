@@ -471,6 +471,8 @@ public class NodeClient {
             while ((bytesRead = inputStream.read(contents)) != -1) // -1 ==> no data left to read.
                 fileSem.acquire();
                 logger.trace("Before write");
+                logger.trace("bytesRead: " + bytesRead);
+                logger.trace("bytesRead: " + contents.length);
                 bos.write(contents, 0, bytesRead); // content, offset, how many bytes are read.
                 logger.trace("After write");
                 fileSem.release();
