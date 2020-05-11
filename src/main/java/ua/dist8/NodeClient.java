@@ -468,7 +468,9 @@ public class NodeClient {
             OutputStream outputStream = socket.getOutputStream();
 
             logger.info("send JSON received message.");
+            sendingSem.acquire();
             outputStream.write(0);
+            sendingSem.release();
 
             //Number of bytes read in one read() call
             int bytesRead = 0;

@@ -52,10 +52,12 @@ public class FileTransfer {
 
             logger.info("Waiting till JSON is received by the other side.");
             inputStream.read();
+            logger.info("JSON is received by the other side, continuing our transmission...");
 
             byte[] contents;
             readSem.acquire();
             long fileLength = file.length();
+            logger.info("The size of the file is: " + fileLength +" bytes");
             readSem.release();
             long current = 0;
 
