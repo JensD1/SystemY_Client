@@ -571,7 +571,9 @@ public class NodeClient {
                             contents = new byte[size];
                             bis.read(contents, 0, size);
                             String tempString = new String(contents);
+                            logger.debug("tempString is " + tempString);
                             logstring.concat(tempString);
+                            logger.debug("logstring is " + logstring);
                         }
                         logger.debug("The logstring contains: " + logstring);
                         JSONObject logjson = new JSONObject(logstring);
