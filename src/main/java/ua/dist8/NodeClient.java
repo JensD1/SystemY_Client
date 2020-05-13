@@ -549,7 +549,7 @@ public class NodeClient {
                     if(!address.equals(InetAddress.getLocalHost())){
                         FileTransfer.sendFile(address, file.getPath(), "replication");
                         logger.info("File successfully replicated.");
-
+                        moveFile(file, "/home/pi/replicatedFiles/");
                         fileSem.acquire();
                         File logfile = new File("/home/pi/logFiles/" + file.getName() + "Log");
                         FileInputStream fis = new FileInputStream(logfile); // Reads bytes from the file.
@@ -642,6 +642,37 @@ public class NodeClient {
         }
     }
 
+    /**
+     *
+     * @param file
+     * @param path to were to write
+     */
+    public void moveFile(File file, String path){
+        // renaming the file and moving it to a new location
+        try {
+            fileSem.acquire();
+            File folder = new File(path);
+            if(!folder.exists()){
+                boolean success = folder.mkdir();
+                if(!success){
+                    throw new Exception("Could not create directory " + folder.getName() + "!");
+                }
+            }
+            logger.info("Moving file " + file.getName() + " to " + path + file.getName());
+            if (file.renameTo(new File(path + file.getName()))) {
+                // if file copied successfully then delete the original file
+                file.delete();
+                logger.info("File moved successfully");
+            } else {
+                logger.warn("Failed to move the file");
+            }
+            fileSem.release();
+        } catch(Exception e){
+            logger.error(e);
+            fileSem.release();
+        }
+    }
+
     public void replicationStart()
     {
         try {
@@ -663,6 +694,7 @@ public class NodeClient {
                     }
                     FileTransfer.sendFile(address, file.getPath(), "replication");
                     logger.info("File successfully replicated.");
+                    moveFile(file, "/home/pi/replicatedFiles/");
                     logger.info("Creating a log file for file " + file.getName() + "Log");
                     createLogFile(address, file.getName() + "Log");
                     logger.info("Sending log file to " + address);
