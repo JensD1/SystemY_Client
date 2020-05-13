@@ -694,7 +694,6 @@ public class NodeClient {
                     }
                     FileTransfer.sendFile(address, file.getPath(), "replication");
                     logger.info("File successfully replicated.");
-                    moveFile(file, "/home/pi/replicatedFiles/");
                     logger.info("Creating a log file for file " + file.getName() + "Log");
                     createLogFile(address, file.getName() + "Log");
                     logger.info("Sending log file to " + address);
