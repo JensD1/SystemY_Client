@@ -555,7 +555,7 @@ public class NodeClient {
                         FileInputStream fis = new FileInputStream(logfile); // Reads bytes from the file.
                         BufferedInputStream bis = new BufferedInputStream(fis); // Gives extra functionality to fileInputStream so it can buffer data.
                         byte[] contents;
-                        String logstring = "";
+                        StringBuilder logstring = new StringBuilder();
                         long fileLength = logfile.length();
                         logger.info("The size of the logfile is: " + fileLength +" bytes");
                         long current = 0;
@@ -572,11 +572,11 @@ public class NodeClient {
                             bis.read(contents, 0, size);
                             String tempString = new String(contents);
                             logger.debug("tempString is " + tempString);
-                            logstring.concat(tempString);
+                            logstring.append(tempString);
                             logger.debug("logstring is " + logstring);
                         }
                         logger.debug("The logstring contains: " + logstring);
-                        JSONObject logjson = new JSONObject(logstring);
+                        JSONObject logjson = new JSONObject(logstring.toString());
                         logjson.put("owner", address.getHostName());
                         logjson.put("isDownloaded", true);
                         logjson.put("downloadLocations", logjson.getString("downloadLocations").concat(","+InetAddress.getLocalHost().toString()));
