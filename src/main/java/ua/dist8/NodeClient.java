@@ -617,7 +617,7 @@ public class NodeClient {
             JSONObject json = new JSONObject();
             json.put("owner", inet.getHostName());
             json.put("isDownloaded", false);
-            json.put("downloadLocations", "");
+            json.put("downloadLocations", InetAddress.getLocalHost().toString());
 
             File folder = new File("/home/pi/logFiles/");
             if(!folder.exists()){
