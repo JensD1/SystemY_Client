@@ -159,8 +159,10 @@ public class NodeClient {
                 sendUnicastMessage(nodeIP, json);
             }
         }
-        if(nextID.equals(previousID) && !nextID.equals(currentID)){
-            replicationStart();
+        if(nextID.equals(previousID)){
+            if(!nextID.equals(currentID)){
+                replicationStart();
+            }
         }
         else {
             checkIfOwnerChanged();
