@@ -60,10 +60,6 @@ public class TCPThreadHandler extends Thread {
                                 , json.getString("typeOfSource"), clientSocket.getInetAddress());
 
 
-
-
-
-
                     }
 
                 }
