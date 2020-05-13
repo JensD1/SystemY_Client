@@ -54,10 +54,18 @@ public class TCPThreadHandler extends Thread {
                         }
                     }
 
-                    case "removeReplicatedFile" : {
+                    case "replicationShutdown" : {
 
-                        NodeClient.getInstance().removeReplicatedFile(json.getString("fileName"), json.getString("typeOfDest"));
+                        NodeClient.getInstance().removeReplicatedFile(json.getString("fileName"), json.getString("typeOfDest")
+                                , json.getString("typeOfSource"), clientSocket.getInetAddress());
+
+
+
+
+
+
                     }
+
                 }
             }
 
