@@ -573,6 +573,7 @@ public class NodeClient {
                             String tempString = new String(contents);
                             logstring.concat(tempString);
                         }
+                        logger.debug("The logstring contains: " + logstring);
                         JSONObject logjson = new JSONObject(logstring);
                         logjson.put("owner", address.getHostName());
                         logjson.put("isDownloaded", true);
