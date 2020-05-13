@@ -2,6 +2,7 @@ package ua.dist8;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -158,7 +159,10 @@ public class NodeClient {
                 sendUnicastMessage(nodeIP, json);
             }
         }
+        checkIfOwnerChanged();
     }
+
+
 
     /**
      * This method will send a unicast message to a given InetAddress as a respons to a multicast message.
@@ -455,7 +459,7 @@ public class NodeClient {
         // todo finish this method.
     //}
 
-    public void receiveFile(InputStream inputStream, JSONObject json, OutputStream outputStream, String type){
+    public void receiveFile(InputStream inputStream, JSONObject json, OutputStream outputStream, String type){ // todo if file already exists, don't save it!!
         try {
             byte[] contents = new byte[10000];
             String fileName = json.getString("fileName");
@@ -520,12 +524,93 @@ public class NodeClient {
         }
     }
 
+    public void checkIfOwnerChanged(){
+        try {
+            logger.info("Checking if the files have new owners.");
+            File folder = new File("/home/pi/ownedFiles/");
+            if(!folder.exists()){
+                boolean success = folder.mkdir();
+                if(!success){
+                    throw new Exception("Could not create directory " + folder.getName() + "!");
+                }
+            }
+            File[] listOfFiles = folder.listFiles();
+            if(listOfFiles != null) {
+                for (File file : listOfFiles) {
+                    logger.info("Check who is the owner of file "+ file.getName() + "according to the NamingServer.");
+                    InetAddress address = fileRequest(file.getName());
+                    if(!address.equals(InetAddress.getLocalHost())){
+                        FileTransfer.sendFile(address, file.getPath(), "replication");
+                        logger.info("File successfully replicated.");
+
+                        fileSem.acquire();
+                        File logfile = new File("/home/pi/logFiles/" + file.getName() + "Log");
+                        FileInputStream fis = new FileInputStream(logfile); // Reads bytes from the file.
+                        BufferedInputStream bis = new BufferedInputStream(fis); // Gives extra functionality to fileInputStream so it can buffer data.
+                        byte[] contents;
+                        String logstring = "";
+                        long fileLength = logfile.length();
+                        logger.info("The size of the logfile is: " + fileLength +" bytes");
+                        long current = 0;
+
+                        while(current!=fileLength){
+                            int size = 10000;
+                            if(fileLength - current >= size)
+                                current += size;
+                            else{
+                                size = (int)(fileLength - current);
+                                current = fileLength;
+                            }
+                            contents = new byte[size];
+                            bis.read(contents, 0, size);
+                            String tempString = new String(contents);
+                            logstring.concat(tempString);
+                        }
+                        JSONObject logjson = new JSONObject(logstring);
+                        logjson.put("owner", address.getHostName());
+                        logjson.put("isDownloaded", true);
+                        logjson.put("downloadLocations", logjson.getString("downloadLocations").concat(","+InetAddress.getLocalHost().toString()));
+                        fis.close();
+                        bis.close();
+
+                        fileSem.release();
+
+                        contents = logjson.toString().getBytes();
+                        int bytesLength = contents.length;
+                        fileSem.acquire();
+                        FileOutputStream fos = new FileOutputStream("/home/pi/logFiles/" + file.getName() + "Log"); // todo make sure that this folder exists
+                        BufferedOutputStream bos = new BufferedOutputStream(fos);
+                        bos.write(contents, 0, bytesLength); // content, offset, how many bytes are read.
+                        bos.flush();
+                        bos.close();
+                        fos.close();
+                        fileSem.release();
+                        logger.info("log file adjusted.");
+                        logger.info("Sending log file to " + address + ".");
+                        FileTransfer.sendFile(address, "/home/pi/logFiles/" + file.getName() + "Log", "log");
+                        logger.info("Remove local log file.");
+                        boolean success = logfile.delete();
+                        if(!success){
+                            throw new Exception("Could not delete logFile " + logfile.getName() + "!");
+                        }
+                        logger.info("Log file successfully sent!");
+                    }
+                }
+            }
+            else{
+                logger.warn("No local files to replicate.");
+            }
+        } catch (Exception e){
+            logger.error(e);
+        }
+    }
+
     public void createLogFile(InetAddress inet, String fileName){
         try {
             JSONObject json = new JSONObject();
             json.put("owner", inet.getHostName());
             json.put("isDownloaded", false);
-            json.put("downloadLocations", new ArrayList<String>());
+            json.put("downloadLocations", "");
 
             File folder = new File("/home/pi/logFiles/");
             if(!folder.exists()){
@@ -575,6 +660,7 @@ public class NodeClient {
                     createLogFile(address, file.getName() + "Log");
                     logger.info("Sending log file to " + address);
                     FileTransfer.sendFile(address, "/home/pi/logFiles/" + file.getName() + "Log", "log");
+                    logger.info("Remove local log file.");
                     File logfile = new File("/home/pi/logFiles/" + file.getName() + "Log");
                     boolean success = logfile.delete();
                     if(!success){
