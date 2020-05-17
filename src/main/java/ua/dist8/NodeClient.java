@@ -49,6 +49,9 @@ public class NodeClient {
         return nodeClient;
     }
 
+    public InetAddress getNsIP(){
+        return nsIP;
+    }
 
     public static InetAddress getOwnNodeAddress(){
         return ownNodeAddress;
