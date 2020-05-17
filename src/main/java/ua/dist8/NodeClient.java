@@ -248,21 +248,23 @@ public class NodeClient {
      */
     public void receiveMulticastReplyNS(JSONObject json, InetAddress nsIP) throws JSONException, IOException, InterruptedException {
         logger.info("Received a reply of our discovery multicast message from the NamingServer.");
-        ownNodeAddress = nodeRequest(Hashing.createHash(InetAddress.getLocalHost().getHostName()));
         int amountOfNodes = (json.getInt("amountOfNodes"));
         if(amountOfNodes > 0){
             logger.debug("Succesfully connected to " + nsIP.getHostName() + ". The number of other nodes in the network before I entered is " + amountOfNodes);
             this.nsIP = nsIP; //This will save the IP-address of the NS for later use
+            ownNodeAddress = nodeRequest(Hashing.createHash(InetAddress.getLocalHost().getHostName()));
             nodeClient.replicationStart();
         }
         else if(amountOfNodes == 0){
             logger.debug("Succesfully connected to " + nsIP.getHostName() +". I am the only node in the network, setting next/previous ID to myself");
             this.nsIP = nsIP; //This will save the IP-address of the NS for later use
+            ownNodeAddress = nodeRequest(Hashing.createHash(InetAddress.getLocalHost().getHostName()));
             nextID = Hashing.createHash(nodeName);
             previousID = Hashing.createHash(nodeName);
         }
         else if(amountOfNodes == -1){
             this.nsIP = nsIP; //This will save the IP-address of the NS for later use
+            ownNodeAddress = nodeRequest(Hashing.createHash(InetAddress.getLocalHost().getHostName()));
             logger.debug("I am already in the network! Fetching my next and previous neighbour from NS! ");
             //todo getNeighbours
         }
