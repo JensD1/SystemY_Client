@@ -105,7 +105,7 @@ public class NodeClient {
         logger.debug("Received a multicast from another Node (" + nodeIP.getHostName() + ") on the network, processing message ...");
         while (ownNodeAddress == null){}
         Integer hash = Hashing.createHash(receivedNodeName);
-        if (nodeExists(hash)) {
+        if (nodeExists(hash) && !nodeIP.equals(ownNodeAddress)) {
             logger.info("This is a valid node.");
             try {
                 nodeName = InetAddress.getLocalHost().getHostName();
