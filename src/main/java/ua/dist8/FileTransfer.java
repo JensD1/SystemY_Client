@@ -60,7 +60,7 @@ public class FileTransfer {
                 logger.info("SENDING FILE " + file.getName() + " : Waiting for JSON acknowledge.");
                 fileStatus = inputStream.read();
                 logger.info("SENDING FILE " + file.getName() + " : JSON acknowledge received.");
-                logger.debug("SENDING FILE " + file.getName() + " : It contains the value " + fileStatus);
+                logger.debug("SENDING FILE " + file.getName() + " : received fileStatus equaling " + fileStatus);
                 if(fileStatus == 1) {
                     logger.info("SENDING FILE " + file.getName() + " : sent to the wrong address, trying again with a new address...");
                     outputStream.close();

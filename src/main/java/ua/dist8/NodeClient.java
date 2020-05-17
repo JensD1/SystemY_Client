@@ -564,10 +564,12 @@ public class NodeClient {
     public void receiveFile(InputStream inputStream, JSONObject json, OutputStream outputStream, String type){ // todo if file already exists, don't save it!!
         try {
             int numberOfNodes = getNumberOfNodes();
+            logger.debug("The number of nodes is: " + numberOfNodes);
             int fileStatus = 2; // We assume that standard everything is ok and we are the correct receiver.
             String fileName = json.getString("fileName");
 
             if(type.equals("replication")){
+                logger.info("RECEIVING FILE " + fileName + " : The type of file is a replication file.");
                 File file = new File("/home/pi/localFiles/" + fileName);
                 if(file.exists() && numberOfNodes > 2){
                     fileStatus = 1; // we have the file locally.
