@@ -28,7 +28,7 @@ public class NodeClient {
     private static final Logger logger = LogManager.getLogger();
     private static NodeClient nodeClient = new NodeClient();
     private static Map<String, InetAddress> replicatedFilesMap;
-    private static InetAddress ownNodeAddress;
+    private static volatile InetAddress ownNodeAddress;
 
     /**
      * Constructor for the NodeClient class
@@ -166,6 +166,7 @@ public class NodeClient {
                 sendUnicastMessage(nodeIP, json);
             }
         }
+        while (ownNodeAddress == null){}
         if(nextID.equals(previousID)){
             if(!nextID.equals(currentID)){
                 replicationStart();
