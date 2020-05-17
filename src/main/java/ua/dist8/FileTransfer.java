@@ -44,8 +44,8 @@ public class FileTransfer {
             Socket socket = null;
             while (fileStatus == 1) {
                 // Send the json object first so the other node knows what type of message this is.
-                logger.info("Sending a file to: " + toSend);
-                logger.info("The file that will be sent is: " + filePath);
+                logger.info("SENDING FILE " + file.getName() + " : Sending a file to: " + toSend);
+                logger.info("SENDING FILE " + file.getName() + " : The file that will be sent is: " + filePath);
                 sendingSem.acquire();
                 socket = new Socket(toSend, 5000);
                 outputStream = socket.getOutputStream();
@@ -53,13 +53,13 @@ public class FileTransfer {
                 outputStream.write(json.toString().getBytes());
                 outputStream.flush();
                 sendingSem.release();
-                logger.info("JSON is successfully sent.");
+                logger.info("SENDING FILE " + file.getName() + " : JSON is successfully sent.");
 
-                logger.info("Waiting for JSON acknowledge.");
+                logger.info("SENDING FILE " + file.getName() + " : Waiting for JSON acknowledge.");
                 fileStatus = inputStream.read();
-                logger.info("JSON acknowledge received.");
+                logger.info("SENDING FILE " + file.getName() + " : JSON acknowledge received.");
                 if(fileStatus == 1) {
-                    logger.info("sent to the wrong address, trying again with a new address...");
+                    logger.info("SENDING FILE " + file.getName() + " : sent to the wrong address, trying again with a new address...");
                     outputStream.close();
                     inputStream.close();
                     socket.close();
@@ -72,7 +72,7 @@ public class FileTransfer {
                 byte[] contents;
                 readSem.acquire();
                 long fileLength = file.length();
-                logger.info("The size of the file is: " + fileLength + " bytes");
+                logger.info("SENDING FILE " + file.getName() + " : The size of the file is: " + fileLength + " bytes");
                 readSem.release();
                 long current = 0;
 
@@ -91,12 +91,12 @@ public class FileTransfer {
                     sendingSem.acquire();
                     outputStream.write(contents);
                     sendingSem.release();
-                    logger.info("Sending file ... " + (current * 100) / fileLength + "% complete!");
+                    logger.info("SENDING FILE " + file.getName() + " : Sending file ... " + (current * 100) / fileLength + "% complete!");
                 }
-                logger.info("File sent succesfully!");
+                logger.info("SENDING FILE " + file.getName() + " : File sent succesfully!");
             }
             else
-                logger.info("The other one already had the file.");
+                logger.info("SENDING FILE " + file.getName() + " : The other one already had the file.");
             sendingSem.acquire();
             outputStream.flush();
             outputStream.close();
