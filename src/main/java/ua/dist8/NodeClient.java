@@ -596,7 +596,7 @@ public class NodeClient {
                 for (File file : listOfFiles) {
                     logger.info("SENDING FILE " + file.getName() + " : Check who is the owner of file "+ file.getName() + "according to the NamingServer.");
                     InetAddress address = fileRequest(file.getName());
-                    if(!address.equals(InetAddress.getLocalHost())){
+                    if(!address.equals(InetAddress.getLocalHost().getHostName())){
                         int fileStatus = FileTransfer.sendFile(address, file.getPath(), "replication");
                         moveFile(file, "/home/pi/replicatedFiles/");
                         if(fileStatus != 0){
@@ -783,9 +783,9 @@ public class NodeClient {
                     InetAddress address = fileRequest(file.getName());
                     logger.debug("SENDING FILE " + file.getName() + " : Address to send to is: " + address);
                     logger.debug("SENDING FILE " + file.getName() + " : My own localHost address is: " + InetAddress.getLocalHost());
-                    if(address.equals(InetAddress.getLocalHost())){
+                    if(address.equals(nodeRequest(Hashing.createHash(InetAddress.getLocalHost().getHostName())))){
                         logger.warn("SENDING FILE " + file.getName() + " : Address to send to is myself, changing this address.");
-                        while(address.equals(InetAddress.getLocalHost()))
+                        while(address.equals(nodeRequest(Hashing.createHash(InetAddress.getLocalHost().getHostName()))))
                             address = nodeRequest(previousID);
                             logger.info("SENDING FILE " + file.getName() + " : Current address to send to is: " + address);
                     }
