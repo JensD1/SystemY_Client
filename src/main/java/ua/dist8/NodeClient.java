@@ -169,10 +169,12 @@ public class NodeClient {
         while (ownNodeAddress == null){}
         if(nextID.equals(previousID)){
             if(!nextID.equals(currentID)){
+                logger.debug("STARTING REPLICATION FROM MULTICAST.");
                 replicationStart();
             }
         }
         else {
+            logger.debug("STARTING CHECKIFOWNERCHANGED FROM MULTICAST.");
             checkIfOwnerChanged();
         }
     }
@@ -254,6 +256,7 @@ public class NodeClient {
             logger.debug("Succesfully connected to " + nsIP.getHostName() + ". The number of other nodes in the network before I entered is " + amountOfNodes);
             this.nsIP = nsIP; //This will save the IP-address of the NS for later use
             ownNodeAddress = nodeRequest(Hashing.createHash(InetAddress.getLocalHost().getHostName()));
+            logger.debug("STARTING REPLICATION FROM RECEIVEMULTICASTREPLYNS.");
             nodeClient.replicationStart();
         }
         else if(amountOfNodes == 0){
