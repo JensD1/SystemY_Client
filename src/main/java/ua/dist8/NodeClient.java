@@ -583,6 +583,7 @@ public class NodeClient {
             logger.info("RECEIVING FILE " + fileName + " : Send JSON reply.");
             outputStream.write(fileStatus);
             logger.info("RECEIVING FILE " + fileName + " : JSON reply sent.");
+            logger.debug("RECEIVING FILE " + fileName + " : sent fileStatus equaling " + fileStatus);
 
             if(fileStatus == 2) {
                 byte[] contents = new byte[10000];
