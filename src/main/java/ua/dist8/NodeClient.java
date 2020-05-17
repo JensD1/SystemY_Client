@@ -781,6 +781,8 @@ public class NodeClient {
                 for (File file : listOfFiles) {
                     logger.info("SENDING FILE " + file.getName() + " : replicating file "+file.getName());
                     InetAddress address = fileRequest(file.getName());
+                    logger.debug("SENDING FILE " + file.getName() + " : Address to send to is: " + address);
+                    logger.debug("SENDING FILE " + file.getName() + " : My own localHost address is: " + InetAddress.getLocalHost());
                     if(address.equals(InetAddress.getLocalHost())){
                         logger.warn("SENDING FILE " + file.getName() + " : Address to send to is myself, changing this address.");
                         while(address.equals(InetAddress.getLocalHost()))
