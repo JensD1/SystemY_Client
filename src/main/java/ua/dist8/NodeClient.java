@@ -54,7 +54,7 @@ public class NodeClient {
         return ownNodeAddress;
     }
 
-    public boolean nodeExists(Integer hash){
+    public Boolean nodeExists(Integer hash){
         try {
             if (nsIP == null) {
                 logger.warn("Not connected to any NameServer, Please use !connect before requesting a file");
@@ -79,7 +79,7 @@ public class NodeClient {
                 scanner.close();
                 // returns a string
                 JSONObject jsonResponse = new JSONObject(response);
-                boolean nodeExists = jsonResponse.getBoolean("nodeExists");
+                Boolean nodeExists = jsonResponse.getBoolean("nodeExists");
                 logger.debug("The value of nodeExists is: " + nodeExists);
                 return nodeExists;
             }
