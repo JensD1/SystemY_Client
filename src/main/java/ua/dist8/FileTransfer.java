@@ -70,7 +70,7 @@ public class FileTransfer {
                     do {
                         String tempHostName = toSend.getHostName().split("_")[1];
                         logger.debug("SENDING FILE " + file.getName() + " : TempHostName is " + tempHostName);
-                        tempHostName = tempHostName.split(".")[0];
+                        tempHostName = tempHostName.split("\\.")[0];
                         logger.debug("SENDING FILE " + file.getName() + " : TempHostName is " + tempHostName);
                         toSend = nodeClient.nodeRequest(Hashing.createHash(tempHostName)- 1);
                         logger.info("SENDING FILE " + file.getName() + " : New address is: "+toSend);
