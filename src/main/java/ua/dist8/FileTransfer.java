@@ -28,7 +28,6 @@ public class FileTransfer {
     static public int sendFile(InetAddress toSend, String filePath, String typeOfMessage){
         int fileStatus = 1;
         try {
-
             JSONObject json = new JSONObject();
             //Specify the file
             readSem.acquire();
@@ -42,6 +41,8 @@ public class FileTransfer {
             OutputStream outputStream = null;
             InputStream inputStream = null;
             Socket socket = null;
+            if(toSend.equals(InetAddress.getLocalHost()))
+                fileStatus = 0;
             while (fileStatus == 1) {
                 // Send the json object first so the other node knows what type of message this is.
                 logger.info("SENDING FILE " + file.getName() + " : Sending a file to: " + toSend);
@@ -64,7 +65,9 @@ public class FileTransfer {
                     inputStream.close();
                     socket.close();
                     NodeClient nodeClient = NodeClient.getInstance();
-                    toSend = nodeClient.nodeRequest(Hashing.createHash(toSend.getHostName()) - 1);
+                    do {
+                        toSend = nodeClient.nodeRequest(Hashing.createHash(toSend.getHostName()) - 1);
+                    } while(toSend.equals(InetAddress.getLocalHost()));
                 }
             }
 
