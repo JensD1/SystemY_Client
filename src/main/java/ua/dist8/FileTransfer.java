@@ -68,8 +68,9 @@ public class FileTransfer {
                     socket.close();
                     NodeClient nodeClient = NodeClient.getInstance();
                     do {
-                        logger.trace(toSend.getHostName());
-                        toSend = nodeClient.nodeRequest(Hashing.createHash(toSend.getHostName())- 1);
+                        String tempHostName = toSend.getHostName().split("_")[2].split(".")[1];
+                        logger.debug("SENDING FILE " + file.getName() + " : TempHostName is " + tempHostName);
+                        toSend = nodeClient.nodeRequest(Hashing.createHash(tempHostName)- 1);
                         logger.info("SENDING FILE " + file.getName() + " : New address is: "+toSend);
                     } while(toSend.equals(ownAddress));
                 }
