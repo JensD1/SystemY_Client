@@ -28,6 +28,7 @@ public class NodeClient {
     private static final Logger logger = LogManager.getLogger();
     private static NodeClient nodeClient = new NodeClient();
     private static Map<String, InetAddress> replicatedFilesMap;
+    private static InetAddress ownNodeAddress;
 
     /**
      * Constructor for the NodeClient class
@@ -41,10 +42,16 @@ public class NodeClient {
         replicatedFilesMap = new ConcurrentHashMap<>();
         previousID = Hashing.createHash(nodeName);
         nextID = previousID;
+        ownNodeAddress = null;
     }
 
     public static NodeClient getInstance(){
         return nodeClient;
+    }
+
+
+    public static InetAddress getOwnNodeAddress(){
+        return ownNodeAddress;
     }
 
     /**
@@ -241,6 +248,7 @@ public class NodeClient {
      */
     public void receiveMulticastReplyNS(JSONObject json, InetAddress nsIP) throws JSONException, IOException, InterruptedException {
         logger.info("Received a reply of our discovery multicast message from the NamingServer.");
+        ownNodeAddress = nodeRequest(Hashing.createHash(InetAddress.getLocalHost().getHostName()));
         int amountOfNodes = (json.getInt("amountOfNodes"));
         if(amountOfNodes > 0){
             logger.debug("Succesfully connected to " + nsIP.getHostName() + ". The number of other nodes in the network before I entered is " + amountOfNodes);
@@ -596,7 +604,8 @@ public class NodeClient {
                 for (File file : listOfFiles) {
                     logger.info("SENDING FILE " + file.getName() + " : Check who is the owner of file "+ file.getName() + "according to the NamingServer.");
                     InetAddress address = fileRequest(file.getName());
-                    if(!address.equals(InetAddress.getLocalHost().getHostName())){
+
+                    if(!address.equals(ownNodeAddress)){
                         int fileStatus = FileTransfer.sendFile(address, file.getPath(), "replication");
                         moveFile(file, "/home/pi/replicatedFiles/");
                         if(fileStatus != 0){
@@ -630,7 +639,7 @@ public class NodeClient {
                             JSONObject logjson = new JSONObject(logstring.toString());
                             logjson.put("owner", address.getHostName());
                             logjson.put("isDownloaded", true);
-                            logjson.put("downloadLocations", logjson.getString("downloadLocations").concat(","+InetAddress.getLocalHost().toString()));
+                            logjson.put("downloadLocations", logjson.getString("downloadLocations").concat("," + ownNodeAddress.getHostName()));
                             fis.close();
                             bis.close();
 
@@ -673,7 +682,7 @@ public class NodeClient {
             JSONObject json = new JSONObject();
             json.put("owner", inet.getHostName());
             json.put("isDownloaded", false);
-            json.put("downloadLocations", InetAddress.getLocalHost().toString());
+            json.put("downloadLocations", ownNodeAddress.getHostName());
 
             File folder = new File("/home/pi/logFiles/");
             if(!folder.exists()){
@@ -782,12 +791,13 @@ public class NodeClient {
                     logger.info("SENDING FILE " + file.getName() + " : replicating file "+file.getName());
                     InetAddress address = fileRequest(file.getName());
                     logger.debug("SENDING FILE " + file.getName() + " : Address to send to is: " + address);
-                    logger.debug("SENDING FILE " + file.getName() + " : My own localHost address is: " + InetAddress.getLocalHost());
-                    if(address.equals(nodeRequest(Hashing.createHash(InetAddress.getLocalHost().getHostName())))){
+                    logger.debug("SENDING FILE " + file.getName() + " : My own localHost address is: " + ownNodeAddress);
+                    if(address.equals(ownNodeAddress)){
                         logger.warn("SENDING FILE " + file.getName() + " : Address to send to is myself, changing this address.");
-                        while(address.equals(nodeRequest(Hashing.createHash(InetAddress.getLocalHost().getHostName()))))
+                        while(address.equals(ownNodeAddress)){
                             address = nodeRequest(previousID);
                             logger.info("SENDING FILE " + file.getName() + " : Current address to send to is: " + address);
+                        }
                     }
                     int proceed = FileTransfer.sendFile(address, file.getPath(), "replication");
                     if(proceed != 0){
