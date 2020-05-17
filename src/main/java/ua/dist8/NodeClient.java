@@ -243,7 +243,7 @@ public class NodeClient {
         logger.info("Received a reply of our discovery multicast message from the NamingServer.");
         int amountOfNodes = (json.getInt("amountOfNodes"));
         if(amountOfNodes > 0){
-            logger.debug("Succesfully connected to " + nsIP.getHostName() + ". The amount of other nodes in the network = " + amountOfNodes);
+            logger.debug("Succesfully connected to " + nsIP.getHostName() + ". The number of other nodes in the network before I entered is " + amountOfNodes);
             this.nsIP = nsIP; //This will save the IP-address of the NS for later use
             nodeClient.replicationStart();
         }
@@ -414,6 +414,46 @@ public class NodeClient {
     }
 
     /**
+     * REST request to get the number of nodes in the network.
+     * @return
+     * @throws IOException
+     */
+    public int getNumberOfNodes() throws IOException {
+        if (nsIP == null){
+            logger.warn("Not connected to any NameServer, Please use !connect before requesting a file");
+            return -1;
+        }
+        String hostName = nsIP.getHostAddress();
+        String url ="http://"+hostName+":8080/numberOfNodes";
+        logger.debug("Trying to connect with "+url);
+        HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+
+        connection.setRequestMethod("GET");
+
+        int responseCode = connection.getResponseCode();
+        logger.debug("Connecting to " + url +"Response code = "+ responseCode);
+        if(responseCode == 200){ //connection successful
+            String response = "";
+            Scanner scanner = new Scanner(connection.getInputStream());
+            while(scanner.hasNextLine()){
+                response += scanner.nextLine();
+                response += "\n";
+            }
+            scanner.close();
+            // returns a string
+            JSONObject jsonResponse = new JSONObject(response);
+            int numberOfNodes = jsonResponse.getInt("numberOfNodes");
+            logger.debug("Number of nodes is: "+ numberOfNodes);
+            return numberOfNodes;
+        }
+        logger.error("Request failed!");
+
+        // an error happened
+        return -1;
+    }
+
+
+    /**
      * REST request to get InetAddress of node location.
      * @param nodeHash
      * @return
@@ -468,17 +508,18 @@ public class NodeClient {
 
     public void receiveFile(InputStream inputStream, JSONObject json, OutputStream outputStream, String type){ // todo if file already exists, don't save it!!
         try {
+            int numberOfNodes = getNumberOfNodes();
             int fileStatus = 2; // We assume that standard everything is ok and we are the correct receiver.
             String fileName = json.getString("fileName");
 
             if(type.equals("replication")){
                 File file = new File("/home/pi/localFiles/" + fileName);
-                if(file.exists()){
+                if(file.exists() && numberOfNodes > 2){
                     fileStatus = 1; // we have the file locally.
                     logger.info("File is already stored locally.. \nGiving a response back.\n");
                 }
                 file = new File("/home/pi/ownedFiles/" + fileName);
-                if(file.exists()){
+                if(file.exists() && numberOfNodes > 2){
                     fileStatus = 0; // We are the owners of the file.
                     logger.info("We own the file.. \nGiving a response back.\n");
                 }

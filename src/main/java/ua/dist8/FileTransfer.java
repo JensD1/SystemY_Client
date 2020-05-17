@@ -59,6 +59,7 @@ public class FileTransfer {
                 fileStatus = inputStream.read();
                 logger.info("JSON acknowledge received.");
                 if(fileStatus == 1) {
+                    logger.info("sent to the wrong address, trying again with a new address...");
                     outputStream.close();
                     inputStream.close();
                     socket.close();
@@ -94,6 +95,8 @@ public class FileTransfer {
                 }
                 logger.info("File sent succesfully!");
             }
+            else
+                logger.info("The other one already had the file.");
             sendingSem.acquire();
             outputStream.flush();
             outputStream.close();
