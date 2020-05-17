@@ -25,11 +25,10 @@ public class FileTransfer {
      * @param typeOfMessage contains which type of message this is.
      *                      This should be either "replication", "fileRequest" or "log".
      */
-    static public void sendFile(InetAddress toSend, String filePath, String typeOfMessage){
+    static public int sendFile(InetAddress toSend, String filePath, String typeOfMessage){
+        int fileStatus = 1;
         try {
-            // Send the json object first so the other node knows what type of message this is.
-            logger.info("Sending a file to: " + toSend);
-            logger.info("The file that will be send is: "+ filePath);
+
             JSONObject json = new JSONObject();
             //Specify the file
             readSem.acquire();
@@ -40,45 +39,61 @@ public class FileTransfer {
             json.put("typeOfMsg", typeOfMessage);
             json.put("typeOfNode", "CL");
             json.put("fileName", file.getName());
-
-            sendingSem.acquire();
-            Socket socket = new Socket(toSend, 5000);
-            OutputStream outputStream = socket.getOutputStream();
-            InputStream inputStream = socket.getInputStream();
-            outputStream.write(json.toString().getBytes());
-            outputStream.flush();
-            sendingSem.release();
-            logger.info("JSON is successfully sent.");
-
-            logger.info("Waiting for JSON acknowledge.");
-            inputStream.read();
-            logger.info("JSON acknowledge received.");
-
-            byte[] contents;
-            readSem.acquire();
-            long fileLength = file.length();
-            logger.info("The size of the file is: " + fileLength +" bytes");
-            readSem.release();
-            long current = 0;
-
-            while(current!=fileLength){
-                int size = 10000;
-                if(fileLength - current >= size)
-                    current += size;
-                else{
-                    size = (int)(fileLength - current);
-                    current = fileLength;
-                }
-                contents = new byte[size];
-                readSem.acquire();
-                bis.read(contents, 0, size);
-                readSem.release();
+            OutputStream outputStream = null;
+            InputStream inputStream = null;
+            Socket socket = null;
+            while (fileStatus == 1) {
+                // Send the json object first so the other node knows what type of message this is.
+                logger.info("Sending a file to: " + toSend);
+                logger.info("The file that will be sent is: " + filePath);
                 sendingSem.acquire();
-                outputStream.write(contents);
+                socket = new Socket(toSend, 5000);
+                outputStream = socket.getOutputStream();
+                inputStream = socket.getInputStream();
+                outputStream.write(json.toString().getBytes());
+                outputStream.flush();
                 sendingSem.release();
-                logger.info("Sending file ... "+(current*100)/fileLength+"% complete!");
+                logger.info("JSON is successfully sent.");
+
+                logger.info("Waiting for JSON acknowledge.");
+                fileStatus = inputStream.read();
+                logger.info("JSON acknowledge received.");
+                if(fileStatus == 1) {
+                    outputStream.close();
+                    inputStream.close();
+                    socket.close();
+                    NodeClient nodeClient = NodeClient.getInstance();
+                    toSend = nodeClient.nodeRequest(Hashing.createHash(toSend.getHostName()) - 1);
+                }
             }
 
+            if(fileStatus != 0) {
+                byte[] contents;
+                readSem.acquire();
+                long fileLength = file.length();
+                logger.info("The size of the file is: " + fileLength + " bytes");
+                readSem.release();
+                long current = 0;
+
+                while (current != fileLength) {
+                    int size = 10000;
+                    if (fileLength - current >= size)
+                        current += size;
+                    else {
+                        size = (int) (fileLength - current);
+                        current = fileLength;
+                    }
+                    contents = new byte[size];
+                    readSem.acquire();
+                    bis.read(contents, 0, size);
+                    readSem.release();
+                    sendingSem.acquire();
+                    outputStream.write(contents);
+                    sendingSem.release();
+                    logger.info("Sending file ... " + (current * 100) / fileLength + "% complete!");
+                }
+                logger.info("File sent succesfully!");
+            }
             sendingSem.acquire();
             outputStream.flush();
             outputStream.close();
@@ -89,10 +104,10 @@ public class FileTransfer {
             fis.close();
             bis.close();
             readSem.release();
-            logger.info("File sent succesfully!");
             // todo make sure this send is also received by the other one.
         } catch(Exception e){
             logger.error(e);
         }
+        return fileStatus;
     }
 }

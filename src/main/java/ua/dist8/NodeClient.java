@@ -468,64 +468,76 @@ public class NodeClient {
 
     public void receiveFile(InputStream inputStream, JSONObject json, OutputStream outputStream, String type){ // todo if file already exists, don't save it!!
         try {
-            byte[] contents = new byte[10000];
+            int fileStatus = 2; // We assume that standard everything is ok and we are the correct receiver.
             String fileName = json.getString("fileName");
-            logger.info("We will receive a replicated file "+ fileName);
-            File folder;
+
             if(type.equals("replication")){
-                folder = new File("/home/pi/ownedFiles/");
-            }
-            else if(type.equals("log")){
-                folder = new File("/home/pi/logFiles/");
-            }
-            else throw new Exception("Wrong typeOfMsg!");
-            if(!folder.exists()){
-                boolean succes = folder.mkdir();
-                if(!succes){
-                    throw new Exception("Could not create directory " + folder.getName() + "!");
+                File file = new File("/home/pi/localFiles/" + fileName);
+                if(file.exists()){
+                    fileStatus = 1; // we have the file locally.
+                    logger.info("File is already stored locally.. \nGiving a response back.\n");
+                }
+                file = new File("/home/pi/ownedFiles/" + fileName);
+                if(file.exists()){
+                    fileStatus = 0; // We are the owners of the file.
+                    logger.info("We own the file.. \nGiving a response back.\n");
                 }
             }
-            //Initialize the FileOutputStream to the output file's full path.
-            fileSem.acquire();
-            FileOutputStream fos;
-            if(type.equals("replication")) {
-                fos = new FileOutputStream("/home/pi/ownedFiles/" + fileName);
-            }
-            else{
-                fos = new FileOutputStream("/home/pi/logFiles/" + fileName);
-            }
-            BufferedOutputStream bos = new BufferedOutputStream(fos);
-            fileSem.release();
 
             logger.info("Send JSON reply.");
-            outputStream.write(0);
+            outputStream.write(fileStatus);
             logger.info("JSON reply sent.");
 
-            //Number of bytes read in one read() call
-            int bytesRead = 0;
-            if(type.equals("replication")) {
-                logger.info("Starting to write the file to: /home/pi/ownedFiles/" + fileName);
-            }
-            else{
-                logger.info("Starting to write the file to: /home/pi/logFiles/" + fileName);
-            }
-            while ((bytesRead = inputStream.read(contents)) != -1) { // -1 ==> no data left to read.
+            if(fileStatus == 2) {
+                byte[] contents = new byte[10000];
+                logger.info("We will receive a replicated file " + fileName);
+                File folder;
+                if (type.equals("replication")) {
+                    folder = new File("/home/pi/ownedFiles/");
+                } else if (type.equals("log")) {
+                    folder = new File("/home/pi/logFiles/");
+                } else throw new Exception("Wrong typeOfMsg!");
+                if (!folder.exists()) {
+                    boolean succes = folder.mkdir();
+                    if (!succes) {
+                        throw new Exception("Could not create directory " + folder.getName() + "!");
+                    }
+                }
+                //Initialize the FileOutputStream to the output file's full path.
                 fileSem.acquire();
-                logger.debug("Before write");
-                logger.debug("bytesRead: " + bytesRead);
-                logger.debug("bytesRead: " + contents.length);
-                bos.write(contents, 0, bytesRead); // content, offset, how many bytes are read.
-                logger.debug("After write");
+                FileOutputStream fos;
+                if (type.equals("replication")) {
+                    fos = new FileOutputStream("/home/pi/ownedFiles/" + fileName);
+                } else {
+                    fos = new FileOutputStream("/home/pi/logFiles/" + fileName);
+                }
+                BufferedOutputStream bos = new BufferedOutputStream(fos);
                 fileSem.release();
+
+                //Number of bytes read in one read() call
+                int bytesRead = 0;
+                if (type.equals("replication")) {
+                    logger.info("Starting to write the file to: /home/pi/ownedFiles/" + fileName);
+                } else {
+                    logger.info("Starting to write the file to: /home/pi/logFiles/" + fileName);
+                }
+                while ((bytesRead = inputStream.read(contents)) != -1) { // -1 ==> no data left to read.
+                    fileSem.acquire();
+                    logger.debug("Before write");
+                    logger.debug("bytesRead: " + bytesRead);
+                    logger.debug("bytesRead: " + contents.length);
+                    bos.write(contents, 0, bytesRead); // content, offset, how many bytes are read.
+                    logger.debug("After write");
+                    fileSem.release();
+                }
+                fileSem.acquire();
+                bos.flush();
+                bos.close();
+                fos.close();
+                fileSem.release();
+
+                logger.info("File saved successfully!");
             }
-            fileSem.acquire();
-            bos.flush();
-            bos.close();
-            fos.close();
-            fileSem.release();
-
-            logger.info("File saved successfully!");
-
         } catch(Exception e){
             logger.error(e);
         }
@@ -535,6 +547,7 @@ public class NodeClient {
         try {
             logger.info("Checking if the files have new owners.");
             File folder = new File("/home/pi/ownedFiles/");
+
             if(!folder.exists()){
                 boolean success = folder.mkdir();
                 if(!success){
@@ -547,63 +560,66 @@ public class NodeClient {
                     logger.info("Check who is the owner of file "+ file.getName() + "according to the NamingServer.");
                     InetAddress address = fileRequest(file.getName());
                     if(!address.equals(InetAddress.getLocalHost())){
-                        FileTransfer.sendFile(address, file.getPath(), "replication");
-                        logger.info("File successfully replicated.");
+                        int fileStatus = FileTransfer.sendFile(address, file.getPath(), "replication");
                         moveFile(file, "/home/pi/replicatedFiles/");
-                        fileSem.acquire();
-                        File logfile = new File("/home/pi/logFiles/" + file.getName() + "Log");
-                        FileInputStream fis = new FileInputStream(logfile); // Reads bytes from the file.
-                        BufferedInputStream bis = new BufferedInputStream(fis); // Gives extra functionality to fileInputStream so it can buffer data.
-                        byte[] contents;
-                        StringBuilder logstring = new StringBuilder();
-                        long fileLength = logfile.length();
-                        logger.info("The size of the logfile is: " + fileLength +" bytes");
-                        long current = 0;
+                        if(fileStatus != 0){
+                            logger.info("File successfully replicated.");
+                            fileSem.acquire();
+                            File logfile = new File("/home/pi/logFiles/" + file.getName() + "Log");
+                            FileInputStream fis = new FileInputStream(logfile); // Reads bytes from the file.
+                            BufferedInputStream bis = new BufferedInputStream(fis); // Gives extra functionality to fileInputStream so it can buffer data.
+                            byte[] contents;
+                            StringBuilder logstring = new StringBuilder();
+                            long fileLength = logfile.length();
+                            logger.info("The size of the logfile is: " + fileLength +" bytes");
+                            long current = 0;
 
-                        while(current!=fileLength){
-                            int size = 10000;
-                            if(fileLength - current >= size)
-                                current += size;
-                            else{
-                                size = (int)(fileLength - current);
-                                current = fileLength;
+                            while(current!=fileLength){
+                                int size = 10000;
+                                if(fileLength - current >= size)
+                                    current += size;
+                                else{
+                                    size = (int)(fileLength - current);
+                                    current = fileLength;
+                                }
+                                contents = new byte[size];
+                                bis.read(contents, 0, size);
+                                String tempString = new String(contents);
+                                logger.debug("tempString is " + tempString);
+                                logstring.append(tempString);
+                                logger.debug("logstring is " + logstring);
                             }
-                            contents = new byte[size];
-                            bis.read(contents, 0, size);
-                            String tempString = new String(contents);
-                            logger.debug("tempString is " + tempString);
-                            logstring.append(tempString);
-                            logger.debug("logstring is " + logstring);
+                            logger.debug("The logstring contains: " + logstring);
+                            JSONObject logjson = new JSONObject(logstring.toString());
+                            logjson.put("owner", address.getHostName());
+                            logjson.put("isDownloaded", true);
+                            logjson.put("downloadLocations", logjson.getString("downloadLocations").concat(","+InetAddress.getLocalHost().toString()));
+                            fis.close();
+                            bis.close();
+
+                            fileSem.release();
+
+                            contents = logjson.toString().getBytes();
+                            int bytesLength = contents.length;
+                            fileSem.acquire();
+                            FileOutputStream fos = new FileOutputStream("/home/pi/logFiles/" + file.getName() + "Log"); // todo make sure that this folder exists
+                            BufferedOutputStream bos = new BufferedOutputStream(fos);
+                            bos.write(contents, 0, bytesLength); // content, offset, how many bytes are read.
+                            bos.flush();
+                            bos.close();
+                            fos.close();
+                            fileSem.release();
+                            logger.info("log file adjusted.");
+                            logger.info("Sending log file to " + address + ".");
+                            FileTransfer.sendFile(address, "/home/pi/logFiles/" + file.getName() + "Log", "log");
+                            logger.info("Log file successfully sent!");
                         }
-                        logger.debug("The logstring contains: " + logstring);
-                        JSONObject logjson = new JSONObject(logstring.toString());
-                        logjson.put("owner", address.getHostName());
-                        logjson.put("isDownloaded", true);
-                        logjson.put("downloadLocations", logjson.getString("downloadLocations").concat(","+InetAddress.getLocalHost().toString()));
-                        fis.close();
-                        bis.close();
-
-                        fileSem.release();
-
-                        contents = logjson.toString().getBytes();
-                        int bytesLength = contents.length;
-                        fileSem.acquire();
-                        FileOutputStream fos = new FileOutputStream("/home/pi/logFiles/" + file.getName() + "Log"); // todo make sure that this folder exists
-                        BufferedOutputStream bos = new BufferedOutputStream(fos);
-                        bos.write(contents, 0, bytesLength); // content, offset, how many bytes are read.
-                        bos.flush();
-                        bos.close();
-                        fos.close();
-                        fileSem.release();
-                        logger.info("log file adjusted.");
-                        logger.info("Sending log file to " + address + ".");
-                        FileTransfer.sendFile(address, "/home/pi/logFiles/" + file.getName() + "Log", "log");
+                        File logfile = new File("/home/pi/logFiles/" + file.getName() + "Log");
                         logger.info("Remove local log file.");
                         boolean success = logfile.delete();
                         if(!success){
                             throw new Exception("Could not delete logFile " + logfile.getName() + "!");
                         }
-                        logger.info("Log file successfully sent!");
                     }
                 }
             }
@@ -676,9 +692,45 @@ public class NodeClient {
         }
     }
 
+    public void prepareFoldersStartup(){
+        try {
+            File folder = new File("/home/pi/ownedFiles/");
+            if (folder.exists()) {
+                File[] listOfFiles = folder.listFiles();
+                if(listOfFiles != null) {
+                    for (File file : listOfFiles) {
+                        file.delete();
+                    }
+                }
+            }
+            folder = new File("/home/pi/logFiles/");
+            if (folder.exists()) {
+                File[] listOfFiles = folder.listFiles();
+                if(listOfFiles != null) {
+                    for (File file : listOfFiles) {
+                        file.delete();
+                    }
+                }
+            }
+            folder = new File("/home/pi/replicatedFiles/");
+            if (folder.exists()) {
+                File[] listOfFiles = folder.listFiles();
+                if(listOfFiles != null) {
+                    for (File file : listOfFiles) {
+                        file.delete();
+                    }
+                }
+            }
+        }
+        catch (Exception e){
+            logger.error(e);
+        }
+    }
+
     public void replicationStart()
     {
         try {
+            prepareFoldersStartup();
             logger.info("Starting replication process.");
             File folder = new File("/home/pi/localFiles/");
             if(!folder.exists()){
@@ -695,19 +747,25 @@ public class NodeClient {
                     if(address.equals(InetAddress.getLocalHost())){
                         address = nodeRequest(previousID);
                     }
-                    FileTransfer.sendFile(address, file.getPath(), "replication");
-                    logger.info("File successfully replicated.");
-                    logger.info("Creating a log file for file " + file.getName() + "Log");
-                    createLogFile(address, file.getName() + "Log");
-                    logger.info("Sending log file to " + address);
-                    FileTransfer.sendFile(address, "/home/pi/logFiles/" + file.getName() + "Log", "log");
-                    logger.info("Remove local log file.");
+                    int proceed = FileTransfer.sendFile(address, file.getPath(), "replication");
+                    if(proceed != 0){
+                        logger.info("File successfully replicated.");
+                        logger.info("Creating a log file for file " + file.getName() + "Log");
+                        createLogFile(address, file.getName() + "Log");
+                        logger.info("Sending log file to " + address);
+                        FileTransfer.sendFile(address, "/home/pi/logFiles/" + file.getName() + "Log", "log");
+                    }
+                    logger.info("Removing local log file.");
                     File logfile = new File("/home/pi/logFiles/" + file.getName() + "Log");
                     boolean success = logfile.delete();
                     if(!success){
                         throw new Exception("Could not delete logFile " + logfile.getName() + "!");
                     }
-                    logger.info("Log file successfully sent!");
+                    if(proceed != 0)
+                        logger.info("Log file successfully sent!");
+                    else
+                        logger.info("File transfer aborted.");
+
                 }
             }
             else{
