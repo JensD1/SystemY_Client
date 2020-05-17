@@ -102,10 +102,11 @@ public class NodeClient {
      * @param nodeIP is the IP-address of the node that wants to join
      */
     public void multicastHandler(String receivedNodeName, InetAddress nodeIP) throws IOException, JSONException, InterruptedException {
-        logger.debug("Received a multicast from another Node on the network, processing message ...");
+        logger.debug("Received a multicast from another Node (" + nodeIP.getHostName() + ") on the network, processing message ...");
         while (ownNodeAddress == null){}
         Integer hash = Hashing.createHash(receivedNodeName);
         if (nodeExists(hash)) {
+            logger.info("This is a valid node.");
             try {
                 nodeName = InetAddress.getLocalHost().getHostName();
             } catch (Exception e) {
