@@ -498,8 +498,8 @@ public class NodeClient {
             // returns a string
             JSONObject jsonResponse = new JSONObject(response);
             int numberOfNodes = jsonResponse.getInt("numberOfNodes");
-            logger.debug("Number of nodes is: "+ numberOfNodes);
-            return numberOfNodes;
+            logger.debug("Number of nodes is: "+ numberOfNodes + 1);
+            return numberOfNodes + 1;
         }
         logger.error("Request failed!");
 
