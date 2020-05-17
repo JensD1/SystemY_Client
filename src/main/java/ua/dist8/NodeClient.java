@@ -54,6 +54,45 @@ public class NodeClient {
         return ownNodeAddress;
     }
 
+    public boolean nodeExists(Integer hash){
+        try {
+            if (nsIP == null) {
+                logger.warn("Not connected to any NameServer, Please use !connect before requesting a file");
+                return false;
+            }
+            String hostName = nsIP.getHostAddress();
+            String url = "http://" + hostName + ":8080/nodeExists?nodeHash=" + hash;
+            logger.debug("Trying to connect with " + url);
+            HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+
+            connection.setRequestMethod("GET");
+
+            int responseCode = connection.getResponseCode();
+            logger.debug("Connecting to " + url + "Response code = " + responseCode);
+            if (responseCode == 200) { //connection successful
+                String response = "";
+                Scanner scanner = new Scanner(connection.getInputStream());
+                while (scanner.hasNextLine()) {
+                    response += scanner.nextLine();
+                    response += "\n";
+                }
+                scanner.close();
+                // returns a string
+                JSONObject jsonResponse = new JSONObject(response);
+                boolean nodeExists = jsonResponse.getBoolean("nodeExists");
+                logger.debug("The value of nodeExists is: " + nodeExists);
+                return nodeExists;
+            }
+            logger.error("Request failed!");
+
+        } catch(Exception e){
+            logger.error(e);
+        }
+
+        // an error happened
+        return false;
+    }
+
     /**
      * This function wil run when a node receives a multicast message from a new node that wants to join the network.
      * Here we will see if the new node is a neighbour of the existing (current) node. When yes, we will adjust the
@@ -64,118 +103,119 @@ public class NodeClient {
      */
     public void multicastHandler(String receivedNodeName, InetAddress nodeIP) throws IOException, JSONException, InterruptedException {
         logger.debug("Received a multicast from another Node on the network, processing message ...");
-        Integer hash = Hashing.createHash(receivedNodeName);
-        try {
-            nodeName = InetAddress.getLocalHost().getHostName();
-        } catch (Exception e) {
-            logger.error(e);
-        }
-
-        Integer currentID = Hashing.createHash(nodeName);
-        logger.info("my own hash is: " + currentID);
-        logger.info("my Previous is: " + previousID);
-        logger.info("my next is: " + nextID);
-        logger.info("The new one is: " + hash);
-
-        JSONObject json = new JSONObject();
-        json.put("typeOfMsg","multicastReply");
-        if(currentID<hash && hash<nextID){
-            logger.debug("In the first if of multicastReply.");
-            nextID = hash;
-            if (previousID.equals(currentID)){
-                previousID = hash;
-            }
-            json.put("typeOfNode", "CL");
-            json.put("setAs", "next");
-            json.put("currentID", currentID);
-            json.put("newNodeID", nextID);
-            sendUnicastMessage(nodeIP, json);
-            logger.debug("NextID changed to: " + nextID + " Sending unicast message.. He is not an end node.");
-        }
-        if(previousID< hash && hash<currentID){
-            logger.debug("In the second if of multicastReply.");
-            previousID = hash;
-            if (nextID.equals(currentID)){
-                nextID = hash;
-            }
-            json.put("typeOfNode", "CL");
-            json.put("setAs", "previous");
-            json.put("currentID", currentID);
-            json.put("newNodeID", previousID);
-            sendUnicastMessage(nodeIP, json);
-            logger.debug("PreviousID changed to: " + previousID + " Sending unicast message.. He is not an end node.");
-        }
-        // here we will look if the currentID node is the node with the highest or lowes ID number
-        if(currentID>=nextID ){ // there is only one node, or multiple nodes but you have the highest ID number because next is lower.
-            if (currentID < hash) {
-                // the new node has a higher ID
-                logger.debug("In the third if part 1 of multicastReply.");
-                nextID = hash;
-                if (previousID.equals(currentID)) {
-                    previousID = hash;
-                }
-                json.put("typeOfNode", "CL");
-                json.put("setAs", "next");
-                json.put("currentID", currentID);
-                json.put("newNodeID", nextID);
-                sendUnicastMessage(nodeIP, json);
-                logger.debug("NextID changed to: " + nextID + " Sending unicast message.. He is an end node.");
-            }
-            if(currentID > hash && hash < nextID){
-                // the new node has a higher ID
-                logger.debug("In the third if part 2 of multicastReply.");
-                nextID = hash;
-                if (previousID.equals(currentID)) {
-                    previousID = hash;
-                }
-                json.put("typeOfNode", "CL");
-                json.put("setAs", "next");
-                json.put("currentID", currentID);
-                json.put("newNodeID", nextID);
-                sendUnicastMessage(nodeIP, json);
-                logger.debug("NextID changed to: " + nextID + " Sending unicast message.. He is an end node.");
-            }
-        }
-        if(currentID<=previousID){ // you have the lowest nodeID on the network.
-            if(currentID > hash) {
-                // The new node has a lower ID.
-                logger.debug("In the fourth if part 1 of multicastReply.");
-                previousID = hash;
-                if (nextID.equals(currentID)) {
-                    nextID = hash;
-                }
-                json.put("typeOfNode", "CL");
-                json.put("setAs", "previous");
-                json.put("currentID", currentID);
-                json.put("newNodeID", previousID);
-                logger.debug("PreviousID changed to: " + previousID + " Sending unicast message.. He is an end node.");
-                sendUnicastMessage(nodeIP, json);
-            }
-            if (currentID < hash && previousID < hash){
-                // The new node has a lower ID.
-                logger.debug("In the fourth if part 2 of multicastReply.");
-                previousID = hash;
-                if (nextID.equals(currentID)) {
-                    nextID = hash;
-                }
-                json.put("typeOfNode", "CL");
-                json.put("setAs", "previous");
-                json.put("currentID", currentID);
-                json.put("newNodeID", previousID);
-                logger.debug("PreviousID changed to: " + previousID + " Sending unicast message.. He is an end node.");
-                sendUnicastMessage(nodeIP, json);
-            }
-        }
         while (ownNodeAddress == null){}
-        if(nextID.equals(previousID)){
-            if(!nextID.equals(currentID)){
-                logger.debug("STARTING REPLICATION FROM MULTICAST.");
-                replicationStart();
+        Integer hash = Hashing.createHash(receivedNodeName);
+        if (nodeExists(hash)) {
+            try {
+                nodeName = InetAddress.getLocalHost().getHostName();
+            } catch (Exception e) {
+                logger.error(e);
             }
-        }
-        else {
-            logger.debug("STARTING CHECKIFOWNERCHANGED FROM MULTICAST.");
-            checkIfOwnerChanged();
+
+            Integer currentID = Hashing.createHash(nodeName);
+            logger.info("my own hash is: " + currentID);
+            logger.info("my Previous is: " + previousID);
+            logger.info("my next is: " + nextID);
+            logger.info("The new one is: " + hash);
+
+            JSONObject json = new JSONObject();
+            json.put("typeOfMsg", "multicastReply");
+            if (currentID < hash && hash < nextID) {
+                logger.debug("In the first if of multicastReply.");
+                nextID = hash;
+                if (previousID.equals(currentID)) {
+                    previousID = hash;
+                }
+                json.put("typeOfNode", "CL");
+                json.put("setAs", "next");
+                json.put("currentID", currentID);
+                json.put("newNodeID", nextID);
+                sendUnicastMessage(nodeIP, json);
+                logger.debug("NextID changed to: " + nextID + " Sending unicast message.. He is not an end node.");
+            }
+            if (previousID < hash && hash < currentID) {
+                logger.debug("In the second if of multicastReply.");
+                previousID = hash;
+                if (nextID.equals(currentID)) {
+                    nextID = hash;
+                }
+                json.put("typeOfNode", "CL");
+                json.put("setAs", "previous");
+                json.put("currentID", currentID);
+                json.put("newNodeID", previousID);
+                sendUnicastMessage(nodeIP, json);
+                logger.debug("PreviousID changed to: " + previousID + " Sending unicast message.. He is not an end node.");
+            }
+            // here we will look if the currentID node is the node with the highest or lowes ID number
+            if (currentID >= nextID) { // there is only one node, or multiple nodes but you have the highest ID number because next is lower.
+                if (currentID < hash) {
+                    // the new node has a higher ID
+                    logger.debug("In the third if part 1 of multicastReply.");
+                    nextID = hash;
+                    if (previousID.equals(currentID)) {
+                        previousID = hash;
+                    }
+                    json.put("typeOfNode", "CL");
+                    json.put("setAs", "next");
+                    json.put("currentID", currentID);
+                    json.put("newNodeID", nextID);
+                    sendUnicastMessage(nodeIP, json);
+                    logger.debug("NextID changed to: " + nextID + " Sending unicast message.. He is an end node.");
+                }
+                if (currentID > hash && hash < nextID) {
+                    // the new node has a higher ID
+                    logger.debug("In the third if part 2 of multicastReply.");
+                    nextID = hash;
+                    if (previousID.equals(currentID)) {
+                        previousID = hash;
+                    }
+                    json.put("typeOfNode", "CL");
+                    json.put("setAs", "next");
+                    json.put("currentID", currentID);
+                    json.put("newNodeID", nextID);
+                    sendUnicastMessage(nodeIP, json);
+                    logger.debug("NextID changed to: " + nextID + " Sending unicast message.. He is an end node.");
+                }
+            }
+            if (currentID <= previousID) { // you have the lowest nodeID on the network.
+                if (currentID > hash) {
+                    // The new node has a lower ID.
+                    logger.debug("In the fourth if part 1 of multicastReply.");
+                    previousID = hash;
+                    if (nextID.equals(currentID)) {
+                        nextID = hash;
+                    }
+                    json.put("typeOfNode", "CL");
+                    json.put("setAs", "previous");
+                    json.put("currentID", currentID);
+                    json.put("newNodeID", previousID);
+                    logger.debug("PreviousID changed to: " + previousID + " Sending unicast message.. He is an end node.");
+                    sendUnicastMessage(nodeIP, json);
+                }
+                if (currentID < hash && previousID < hash) {
+                    // The new node has a lower ID.
+                    logger.debug("In the fourth if part 2 of multicastReply.");
+                    previousID = hash;
+                    if (nextID.equals(currentID)) {
+                        nextID = hash;
+                    }
+                    json.put("typeOfNode", "CL");
+                    json.put("setAs", "previous");
+                    json.put("currentID", currentID);
+                    json.put("newNodeID", previousID);
+                    logger.debug("PreviousID changed to: " + previousID + " Sending unicast message.. He is an end node.");
+                    sendUnicastMessage(nodeIP, json);
+                }
+            }
+            if (nextID.equals(previousID)) {
+                if (!nextID.equals(currentID)) {
+                    logger.debug("STARTING REPLICATION FROM MULTICAST.");
+                    replicationStart();
+                }
+            } else {
+                logger.debug("STARTING CHECKIFOWNERCHANGED FROM MULTICAST.");
+                checkIfOwnerChanged();
+            }
         }
     }
 
