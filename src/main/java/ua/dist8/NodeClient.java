@@ -782,8 +782,10 @@ public class NodeClient {
                     logger.info("SENDING FILE " + file.getName() + " : replicating file "+file.getName());
                     InetAddress address = fileRequest(file.getName());
                     if(address.equals(InetAddress.getLocalHost())){
+                        logger.warn("SENDING FILE " + file.getName() + " : Address to send to is myself, changing this address.");
                         while(address.equals(InetAddress.getLocalHost()))
                             address = nodeRequest(previousID);
+                            logger.info("SENDING FILE " + file.getName() + " : Current address to send to is: " + address);
                     }
                     int proceed = FileTransfer.sendFile(address, file.getPath(), "replication");
                     if(proceed != 0){
