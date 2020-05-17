@@ -36,8 +36,6 @@ public class NodeClient {
     private NodeClient(){
         try {
             nodeName = InetAddress.getLocalHost().getHostName();
-            logger.trace("NODENAME IS" +  nodeName);
-            logger.trace("Inet is " + InetAddress.getLocalHost());
         } catch (Exception e) {
             logger.error(e);
         }
