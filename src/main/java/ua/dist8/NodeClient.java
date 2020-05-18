@@ -789,7 +789,7 @@ public class NodeClient {
                         logger.debug("downloadLocationWrite is: " + downloadLocationWrite);
                     }
                     jsonLog.put("downloadLocations",downloadLocationWrite);
-                    byte[] contents = jsonLog.toString().getBytes();
+                    contents = jsonLog.toString().getBytes();
                     int bytesLength = contents.length;
                     fileSem.acquire();
                     FileOutputStream fos = new FileOutputStream("/home/pi/logFiles/" + fileName + "Log");
