@@ -451,7 +451,7 @@ public class NodeClient {
                         JSONObject json = new JSONObject();
                         json.put("typeOfMsg", "replicationShutdown");
                         json.put("typeOfSource","local");
-                        json.put("typeOfDest","owned");
+                        json.put("typeOfDest","owner");
                         json.put("typeOfNode", "CL");
                         json.put("fileName", filename);
                         logger.debug("Sending message to owner of local file " + filename);
@@ -469,7 +469,7 @@ public class NodeClient {
                         JSONObject json = new JSONObject();
                         json.put("typeOfMsg", "replicationShutdown");
                         json.put("typeOfSource","replicated");
-                        json.put("typeOfDest","owned");
+                        json.put("typeOfDest","owner");
                         json.put("typeOfNode", "CL");
                         json.put("fileName", filename);
                         logger.debug("Sending message to owner of replicated file " + filename);
