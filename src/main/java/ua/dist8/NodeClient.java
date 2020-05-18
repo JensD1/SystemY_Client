@@ -394,7 +394,7 @@ public class NodeClient {
         logger.debug("File location received from NamingServer!");
         JSONObject responseFileJSON = new JSONObject(responseFile);
 
-        return responseFileJSON.getString("address");
+        return responseFileJSON.getString("inetAddress");
     }
 
     /***
