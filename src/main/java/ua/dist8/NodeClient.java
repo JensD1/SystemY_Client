@@ -7,6 +7,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.*;
+import java.lang.reflect.Array;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -691,7 +692,8 @@ public class NodeClient {
                 File file = new File("/home/pi/logFiles/" +fileName+ "Log");
                 JSONObject jsonLog = new JSONObject(file);
                 boolean isDownloaded = jsonLog.getBoolean("isDownloaded");
-                ArrayList<String> downloadLocations = (ArrayList<String>) jsonLog.get("downloadLocations");
+                ArrayList<String> downloadLocations = new ArrayList<String>(Arrays.asList(jsonLog.getString("downloadLocations").split(",")));
+
 
                 if (!isDownloaded && typeOfSource.equals("local")){
 
@@ -727,12 +729,15 @@ public class NodeClient {
 
                 }
                 else{
-
                     logger.debug("File " + fileName + "has already been downloaded so the log file will be updated...");
-
                     String sourceName = sourceAddress.getHostName();
                     downloadLocations.remove(sourceName);
-                    jsonLog.put("downloadLocations",downloadLocations);
+                    String[] downloadLocationsWriteArray = downloadLocations.toArray(new String[0]);
+                    StringBuilder downloadLocationWrite = new StringBuilder();
+                    for(String temp: downloadLocationsWriteArray){
+                        downloadLocationWrite.append(",").append(temp);
+                    }
+                    jsonLog.put("downloadLocations",downloadLocationWrite);
                     byte[] contents = jsonLog.toString().getBytes();
                     int bytesLength = contents.length;
                     fileSem.acquire();
