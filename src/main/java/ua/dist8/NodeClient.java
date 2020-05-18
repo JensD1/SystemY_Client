@@ -67,6 +67,10 @@ public class NodeClient {
         return ownNodeAddress;
     }
 
+    public static void setReplicatedFilesMap(Map<String, InetAddress> tempReplicatedFilesMap){
+        replicatedFilesMap = tempReplicatedFilesMap;
+    }
+
     public Boolean nodeExists(Integer hash){
         try {
             if (nsIP == null) {
@@ -1132,6 +1136,8 @@ public class NodeClient {
             if(listOfFiles != null) {
                 for (File file : listOfFiles) {
                     sendFileAndCreatedLogFile(file);
+                    InetAddress[] address = {fileRequest(file.getName())};
+                    replicatedFilesMap.put(file.getName(), address[0]);
                 }
             }
             else{
