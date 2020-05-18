@@ -1,6 +1,5 @@
 package ua.dist8;
 
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
@@ -68,12 +67,20 @@ public class TCPThreadHandler extends Thread {
                         }
                         break;
                     }
+
+                    case "replicationShutdown" : {
+                        NodeClient.getInstance().removeReplicatedFile(json.getString("fileName"), json.getString("typeOfDest")
+                                , json.getString("typeOfSource"), clientSocket.getInetAddress());
+                        break;
+                    }
                     default:
-                        logger.error("Received a wrong typeOfMessage!");
+                        logger.error("Received a wrong typeOfMessage! The type was: " + json.getString("typeOfMsg"));
                 }
             }
+
             clientInput.close();
             clientSocket.close();
+
         } catch (Exception e){
             e.printStackTrace();
         }
