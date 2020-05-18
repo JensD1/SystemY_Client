@@ -35,7 +35,7 @@ public class NodeApplication {
         profile.setParameter(Profile.CONTAINER_NAME, "TestContainer");
         profile.setParameter(Profile.MAIN_HOST, "host2");//namingserver will have the main container and is located at host 2
 
-        String name = nodeClient.getHostName();
+        String agentName = nodeClient.getHostNameHash();
 
         try {
             container = runtime.createAgentContainer(profile);
@@ -44,7 +44,7 @@ public class NodeApplication {
             logger.error("Unable to connect to the main container on the NamingServer..");
         }
         try {
-            AgentController ac = container.createNewAgent( name, "NodeAgent", null );
+            AgentController ac = container.createNewAgent(agentName, "NodeAgent", null );
             ac.start();
         }
         catch (Exception e){

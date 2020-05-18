@@ -11,49 +11,63 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class SyncAgent extends Agent {
     private static final Logger logger = LogManager.getLogger();
+    private static HashMap<String,String> synchronizedMap; //all files of the network
+    private static ConcurrentHashMap<String,String> localListMap;
+    //locally owned files
+    private boolean isDone = false;
     //global list that agents will update. First arg is filename, second arg is the lock ("Open" or "Closed")
 
     //Explanation of how Agent works: When a behavior gets called, we will execute the action method in that behavior.
     //when we create a new agent, the setup will be executed where we will start the behaviour of our sync agent
+    // we use different cyclic behaviours
+    // one to listen for changes in the folder that sends update to next node
+    //one to listen for messages from the next node. If the received list is the same as local list, do nothing
+    // else
     protected void setup()
     {
-        addBehaviour( new SyncAgentBehaviour( this ) );
+
+
+        NodeClient nodeClient = null;
+        nodeClient = NodeClient.getInstance();
+        localListMap =  nodeClient.getLocalMap();
+        ParallelBehaviour parallelBehaviour = new ParallelBehaviour();
+
+
+        //listen for changes in the folder
+        //if a file got added, set lock to open
+        //send the changes to the previous node agent
+        parallelBehaviour.addSubBehaviour(new CyclicBehaviour(this) {
+            @Override
+            public void action() {
+
+            }
+        });
+
+        //listen for ACLmessages from the next node.
+        //take their list and compare with our list
+        // if the lists are different, take their list and make sure that your local files are in the list
+        //send the new list to next node
+        // this message will have the origin Agent and the list
+        // when we receive a message with the origin ourself, we wont send it to the next node
+        parallelBehaviour.addSubBehaviour(new CyclicBehaviour(this) {
+            @Override
+            public void action() {
+
+            }
+        });
+
+        //lock stuff??
+        parallelBehaviour.addSubBehaviour(new CyclicBehaviour(this) {
+            @Override
+            public void action() {
+
+            }
+        });
+        this.addBehaviour(parallelBehaviour);
+
 
     }
 }
 
-class SyncAgentBehaviour extends SimpleBehaviour
-{
-    private HashMap<String,String> synchronizedMap; //all files of the network
-    private ConcurrentHashMap<String,String> localListMap; //locally owned files
-    private static final Logger logger = LogManager.getLogger();
-    private boolean isDone =false;
-    public SyncAgentBehaviour(Agent agent) {
-        super(agent);
-    }
-
-    // we will need two local maps, one updated and one old
-    public void action()
-    {
-        NodeClient nodeClient = null;
-        try {
-            nodeClient = NodeClient.getInstance();
-        }catch(Exception e){
-            logger.error(e);
-            logger.error("Unable to get nodeClient Instance");
-        }
-
-        System.out.println( "Initializing agent on " + myAgent.getLocalName() );
-        localListMap = nodeClient.getLocalMap();
-        // load in directory of local files
-        // while loop
-        // listen for changes
-        isDone = true;
-    }
-    public boolean done(){
-        return isDone = true;
-    }
 
 
-
-} //End class B1

@@ -406,23 +406,28 @@ public class NodeClient {
         logger.debug("Hashing my own nodeName: "+nodeName+"\nMy own hash is: "+myHash+"\nPrevious NodeID is: "+previousID+"\n Next NodeID is: "+nextID);
     }
 
-    public String getHostName(){
-        return nodeName;
+    public String getHostNameHash(){
+        return Integer.toString(Hashing.createHash(nodeName));
     }
 
     /**
+     *
      * Init the local list with owned files and set locks to open
      */
     public void initLocalList(){
         File folder = new File("/home/pi/localFiles/");
         File[] listOfFiles = folder.listFiles();
+        try {
+            for (File file : listOfFiles) {
+                if (file.isFile()) {
+                    String fileName = file.getName();
+                    localMap.put(fileName, "Open");
 
-        for (File file : listOfFiles) {
-            if (file.isFile()) {
-                String fileName = file.getName();
-                localMap.put(fileName,"Open");
-
+                }
             }
+        }catch(Exception e){
+
+            logger.error("listOfFiles is empty, make sure that /home/pi/localFiles exists. There might be no local files stored on the node: " +e);
         }
     }
 
