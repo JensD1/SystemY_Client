@@ -757,6 +757,7 @@ public class NodeClient {
                     JSONObject json = new JSONObject();
                     json.put("typeOfMsg","replicationShutdown");
                     json.put("typeOfDest","download");
+                    json.put("typeOfSource", "nonlocal");
                     json.put("fileName",fileName);
 
                     for (String hostName : downloadLocations){

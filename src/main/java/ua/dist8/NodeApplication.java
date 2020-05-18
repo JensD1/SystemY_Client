@@ -23,7 +23,7 @@ public class NodeApplication {
         String fileName;
         InetAddress address;
         Scanner scanner = new Scanner(System.in);
-        logger.info("This is version 3.3.6");
+        logger.info("This is version 3.3.7");
         logger.info("Welcome to the client test application!");
         while(running){
             logger.info("Please enter a command. Type !help for a list of commands: ");
