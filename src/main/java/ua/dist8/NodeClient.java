@@ -483,6 +483,17 @@ public class NodeClient {
                         File logFile = new File("/home/pi/logFiles/" +filename+ "Log");
                         JSONObject jsonLog = new JSONObject(logFile);
                         jsonLog.put("owner", previousNeighbor);
+                        byte[] contents = jsonLog.toString().getBytes();
+                        int bytesLength = contents.length;
+                        fileSem.acquire();
+                        FileOutputStream fos = new FileOutputStream("/home/pi/logFiles/" + filename + "Log");
+                        BufferedOutputStream bos = new BufferedOutputStream(fos);
+                        bos.write(contents, 0, bytesLength); // content, offset, how many bytes are read.
+                        bos.flush();
+                        bos.close();
+                        fos.close();
+                        logger.debug("Log file " + filename + "Log" + " is updated!");
+                        fileSem.release();
 
                         //send msg (with fileTransfer) to previous neighbour:
                         InetAddress[] address = {InetAddress.getByName(previousNeighbor)};

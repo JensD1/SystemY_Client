@@ -73,7 +73,7 @@ public class TCPThreadHandler extends Thread {
                                 , json.getString("typeOfSource"), clientSocket.getInetAddress());
                     }
                     default:
-                        logger.error("Received a wrong typeOfMessage!");
+                        logger.error("Received a wrong typeOfMessage! The type was: " + json.getString("typeOfMsg"));
                 }
             }
 
