@@ -692,9 +692,8 @@ public class NodeClient {
                 File file = new File("/home/pi/logFiles/" +fileName+ "Log");
                 JSONObject jsonLog = new JSONObject(file);
                 boolean isDownloaded = jsonLog.getBoolean("isDownloaded");
+                logger.debug("DownloadLocations before conversion to arraylist: " + jsonLog.getString("downloadLocations"));
                 ArrayList<String> downloadLocations = new ArrayList<String>(Arrays.asList(jsonLog.getString("downloadLocations").split(",")));
-
-
                 if (!isDownloaded && typeOfSource.equals("local")){
 
                     logger.debug("File " + fileName + "has not been downloaded yet so it will be removed...");
@@ -705,16 +704,13 @@ public class NodeClient {
                     json.put("fileName",fileName);
 
                     for (String hostName : downloadLocations){
-
                         sendUnicastMessage(InetAddress.getByName(hostName), json);
                         logger.debug("Sent unicast to notify download location " + hostName + " must delete " + fileName);
-
                     }
 
                     file = new File("/home/pi/ownedFiles/" + fileName);
                     boolean isDeleted = file.delete();
                     if (isDeleted){
-
                         logger.trace("Owned file: "+fileName+ " is successfully deleted");
                     }
                     else logger.error("Owned file: " +fileName+ " is not successfully deleted");
@@ -722,11 +718,9 @@ public class NodeClient {
                     file = new File("/home/pi/logFiles/" +fileName+ "Log");
                     isDeleted = file.delete();
                     if (isDeleted){
-
                         logger.trace("Log file: "+fileName+ " is successfully deleted");
                     }
                     else logger.error("Log file: " +fileName+ " is not successfully deleted");
-
                 }
                 else{
                     logger.debug("File " + fileName + "has already been downloaded so the log file will be updated...");
@@ -922,7 +916,7 @@ public class NodeClient {
                             logjson.put("owner", address[0].getHostName());
                             logjson.put("isDownloaded", true);
                             logjson.put("downloadLocations", logjson.getString("downloadLocations").concat("," + ownNodeAddress.getHostName()));
-                            logger.debug("The new content of downloadLocations is: "+ logjson.getString("downloadLocations"));
+                            logger.debug("SENDING FILE " + file.getName() + " : The new content of downloadLocations is: "+ logjson.getString("downloadLocations"));
                             fis.close();
                             bis.close();
 
