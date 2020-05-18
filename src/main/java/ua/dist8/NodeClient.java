@@ -475,33 +475,63 @@ public class NodeClient {
 
                 // Send the owned files to the previous neighbour.
                 folder = new File("/home/pi/ownedFiles/");
+                if(!folder.exists()){
+                    boolean success = folder.mkdir();
+                    if(!success){
+                        throw new Exception("Could not create directory " + folder.getName() + "!");
+                    }
+                }
                 listOfFiles = folder.listFiles();
+                assert listOfFiles != null;
                 for (File file : listOfFiles) {
                     if (file.isFile()) {
                         String filename = file.getName();
                         String previousNeighbor = responseJSON.getString("previousNode");
 
-                        //update log file
-                        File logFile = new File("/home/pi/logFiles/" +filename+ "Log");
-                        JSONObject jsonLog = new JSONObject(logFile);
-                        jsonLog.put("owner", previousNeighbor);
-                        byte[] contents = jsonLog.toString().getBytes();
-                        int bytesLength = contents.length;
-                        fileSem.acquire();
-                        FileOutputStream fos = new FileOutputStream("/home/pi/logFiles/" + filename + "Log");
-                        BufferedOutputStream bos = new BufferedOutputStream(fos);
-                        bos.write(contents, 0, bytesLength); // content, offset, how many bytes are read.
-                        bos.flush();
-                        bos.close();
-                        fos.close();
-                        logger.debug("Log file " + filename + "Log" + " is updated!");
-                        fileSem.release();
-
                         //send msg (with fileTransfer) to previous neighbour:
                         InetAddress[] address = {InetAddress.getByName(previousNeighbor)};
-                        int succes = FileTransfer.sendFile(address, file.getPath(), "replication");
-                        if(succes!=0)
+                        int success = FileTransfer.sendFile(address, file.getPath(), "replication");
+                        if(success!=0) {
+                            //update log file
+                            fileSem.acquire();
+                            File logFile = new File("/home/pi/logFiles/" + filename + "Log");
+                            FileInputStream fis = new FileInputStream(logFile); // Reads bytes from the file.
+                            BufferedInputStream bis = new BufferedInputStream(fis); // Gives extra functionality to fileInputStream so it can buffer data.
+                            byte[] contents;
+                            StringBuilder logstring = new StringBuilder();
+                            long fileLength = logFile.length();
+                            long current = 0;
+                            while(current!=fileLength){
+                                int size = 10000;
+                                if(fileLength - current >= size)
+                                    current += size;
+                                else{
+                                    size = (int)(fileLength - current);
+                                    current = fileLength;
+                                }
+                                contents = new byte[size];
+                                bis.read(contents, 0, size);
+                                String tempString = new String(contents);
+                                logstring.append(tempString);
+                            }
+                            fis.close();
+                            bis.close();
+                            fileSem.release();
+                            JSONObject jsonLog = new JSONObject(logstring.toString());
+                            jsonLog.put("owner", previousNeighbor);
+                            contents = jsonLog.toString().getBytes();
+                            int bytesLength = contents.length;
+                            fileSem.acquire();
+                            FileOutputStream fos = new FileOutputStream("/home/pi/logFiles/" + filename + "Log");
+                            BufferedOutputStream bos = new BufferedOutputStream(fos);
+                            bos.write(contents, 0, bytesLength); // content, offset, how many bytes are read.
+                            bos.flush();
+                            bos.close();
+                            fos.close();
+                            logger.debug("Log file " + filename + "Log" + " is updated!");
+                            fileSem.release();
                             FileTransfer.sendFile(address, logFile.getPath(), "log");
+                        }
                     }
                 }
 
