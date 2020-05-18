@@ -1069,12 +1069,12 @@ public class NodeClient {
                 createLogFile(address[0], file.getName() + "Log");
                 logger.info("SENDING FILE " + file.getName() + " : Sending log file to " + address[0]);
                 FileTransfer.sendFile(address, "/home/pi/logFiles/" + file.getName() + "Log", "log");
-            }
-            logger.info("SENDING FILE " + file.getName() + " : Removing local log file.");
-            File logfile = new File("/home/pi/logFiles/" + file.getName() + "Log");
-            boolean success = logfile.delete();
-            if (!success) {
-                throw new Exception("Could not delete logFile " + logfile.getName() + "!");
+                logger.info("SENDING FILE " + file.getName() + " : Removing local log file.");
+                File logfile = new File("/home/pi/logFiles/" + file.getName() + "Log");
+                boolean success = logfile.delete();
+                if (!success) {
+                    throw new Exception("Could not delete logFile " + logfile.getName() + "!");
+                }
             }
             if (proceed != 0)
                 logger.info("SENDING FILE " + file.getName() + " : Log file successfully sent!");
