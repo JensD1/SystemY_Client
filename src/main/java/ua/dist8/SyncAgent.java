@@ -6,6 +6,15 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardWatchEventKinds;
+import java.nio.file.WatchEvent;
+import java.nio.file.WatchKey;
+import java.nio.file.WatchService;
+import java.util.List;
+import java.util.UUID;
 
 //runnable and serializable already implemented in class Agent
 
@@ -39,6 +48,23 @@ public class SyncAgent extends Agent {
         parallelBehaviour.addSubBehaviour(new CyclicBehaviour(this) {
             @Override
             public void action() {
+                Path path = Paths.get("location here");
+                try {
+                    WatchService watcher = path.getFileSystem().newWatchService();
+                    path.register(watcher, StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_DELETE, StandardWatchEventKinds.ENTRY_MODIFY);
+                    WatchKey watchKey = watcher.take();
+                    List<WatchEvent<?>> events = watchKey.pollEvents();
+                    for (WatchEvent event : events) {
+                        //check if the event refers to a new file created
+                        if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE) {
+                            //print file name which is newly created
+                            String fileName =event.context().toString();
+                            System.out.println("Created: " + fileName);
+                        }
+                    }
+                }catch(Exception e){
+                    logger.error(e);
+                }
 
             }
         });
