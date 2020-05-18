@@ -1,26 +1,10 @@
-# SystemY
-This is a distributed file server.
+# SystemY_Client
+This is a distributed file node that will exists in a network. A lot of other instances of this project, called nodes, will also be present in this network. Nodes can join and leave the network.
 
-##TODO
-- HASHING (seperate class) -> Samer
+The network will also contain a Naming Server (which can be found at https://github.com/JensD1/SystemY_Server).
 
-- REST NAMING SERVER (namingserver.java)
-- NODE CLIENT (nodeclient.java)
+The purpose is that the nodes posesses files that are replicated and redundantly saved, so we won't lose those files by failure. Furthermore nodes can request files and the namingserver will then determine where the file are saved. 
 
-- DISCOVERY (nodeclient.java + namingseerver.java)
-=> from new Node send multicast message to all existing nodes + naming server with his name and ip address
+When files are added or deleted, these will again be replicated to the other nodes or deleted on all nodes that posesses a replication of these files.
 
-- BOOTSTRAP (nodeclient.java)
-=> init/update node parameters
-=> all nodes calculate their own hash, store local information from other nodes: previousID < currentID < nextID (see Discovery and Bootstrap slide 5)
-=> when new node sends broadcast, all nodes check previousID and nextID form hash value
-=> New node processes response from naming sever (based on #existing nodes)
-
-
-- SHUTDOWN (nodeclient.java)
-=> send  updated param to neigbours before leaving network
-
-- FAILURE (nodeclient.java + namingserver.java)
-=>  namingserver has to handle parameter updates
-
-FIX multicasthandler in nodeclient for endnodes!
+The user can execute all commands via an Textual User Interface and can see messages via a logger.
