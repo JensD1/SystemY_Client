@@ -4,10 +4,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.util.concurrent.Semaphore;
@@ -26,14 +23,13 @@ public class FileTransfer {
      * @param toSend contains the ip address to were to send the file.
      * @param filePath contains the path to the file.
      * @param typeOfMessage contains which type of message this is.
-     *                      This should be either "replication" of "fileRequest".
+     *                      This should be either "replication", "fileRequest" or "log".
      */
-    public void sendFile(InetAddress toSend, String filePath, String typeOfMessage){
+    static public int sendFile(InetAddress[] toSend, String filePath, String typeOfMessage){
+        int fileStatus = 1;
         try {
-            // Send the json object first so the other node knows what type of message this is.
-            logger.info("Sending a file to: " + toSend);
-            logger.info("The file that will be send is: "+ filePath);
             JSONObject json = new JSONObject();
+            InetAddress ownAddress = NodeClient.getOwnNodeAddress();
             //Specify the file
             readSem.acquire();
             File file = new File(filePath);
@@ -43,51 +39,88 @@ public class FileTransfer {
             json.put("typeOfMsg", typeOfMessage);
             json.put("typeOfNode", "CL");
             json.put("fileName", file.getName());
-
-            sendingSem.acquire();
-            Socket socket = new Socket(toSend, 5000);
-            OutputStream outputStream = socket.getOutputStream();
-            outputStream.write(json.toString().getBytes());
-            outputStream.flush();
-            sendingSem.release();
-            logger.info("JSON is successfully sent.");
-
-            byte[] contents;
-            readSem.acquire();
-            long fileLength = file.length();
-            readSem.release();
-            long current = 0;
-
-            while(current!=fileLength){
-                int size = 10000;
-                if(fileLength - current >= size)
-                    current += size;
-                else{
-                    size = (int)(fileLength - current);
-                    current = fileLength;
-                }
-                contents = new byte[size];
-                readSem.acquire();
-                bis.read(contents, 0, size);
-                readSem.release();
+            OutputStream outputStream = null;
+            InputStream inputStream = null;
+            Socket socket = null;
+            if(toSend[0].equals(ownAddress))
+                fileStatus = 0;
+            while (fileStatus == 1) {
+                // Send the json object first so the other node knows what type of message this is.
+                logger.info("SENDING FILE " + file.getName() + " : Sending a file to: " + toSend[0]);
+                logger.info("SENDING FILE " + file.getName() + " : The file that will be sent is: " + filePath);
                 sendingSem.acquire();
-                outputStream.write(contents);
+                socket = new Socket(toSend[0], 5000);
+                outputStream = socket.getOutputStream();
+                inputStream = socket.getInputStream();
+                outputStream.write(json.toString().getBytes());
+                outputStream.flush();
                 sendingSem.release();
-                logger.info("Sending file ... "+(current*100)/fileLength+"% complete!");
+                logger.info("SENDING FILE " + file.getName() + " : JSON is successfully sent.");
+
+                logger.info("SENDING FILE " + file.getName() + " : Waiting for JSON acknowledge.");
+                fileStatus = inputStream.read();
+                logger.info("SENDING FILE " + file.getName() + " : JSON acknowledge received.");
+                logger.debug("SENDING FILE " + file.getName() + " : received fileStatus equaling " + fileStatus);
+                if(fileStatus == 1) {
+                    logger.info("SENDING FILE " + file.getName() + " : sent to the wrong address, trying again with a new address...");
+                    outputStream.close();
+                    inputStream.close();
+                    socket.close();
+                    NodeClient nodeClient = NodeClient.getInstance();
+                    do {
+                        String tempHostName = toSend[0].getHostName().split("_")[1];
+                        logger.debug("SENDING FILE " + file.getName() + " : TempHostName is " + tempHostName);
+                        tempHostName = tempHostName.split("\\.")[0];
+                        logger.debug("SENDING FILE " + file.getName() + " : TempHostName is " + tempHostName);
+                        toSend[0] = nodeClient.nodeRequest(Hashing.createHash(tempHostName)- 1);
+                        logger.info("SENDING FILE " + file.getName() + " : New address is: "+toSend[0]);
+                    } while(toSend[0].equals(ownAddress));
+                }
             }
+
+            if(fileStatus != 0) {
+                byte[] contents;
+                readSem.acquire();
+                long fileLength = file.length();
+                logger.info("SENDING FILE " + file.getName() + " : The size of the file is: " + fileLength + " bytes");
+                readSem.release();
+                long current = 0;
+
+                while (current != fileLength) {
+                    int size = 10000;
+                    if (fileLength - current >= size)
+                        current += size;
+                    else {
+                        size = (int) (fileLength - current);
+                        current = fileLength;
+                    }
+                    contents = new byte[size];
+                    readSem.acquire();
+                    bis.read(contents, 0, size);
+                    readSem.release();
+                    sendingSem.acquire();
+                    outputStream.write(contents);
+                    sendingSem.release();
+                    logger.info("SENDING FILE " + file.getName() + " : Sending file ... " + (current * 100) / fileLength + "% complete!");
+                }
+                logger.info("SENDING FILE " + file.getName() + " : File sent succesfully!");
+            }
+            else
+                logger.info("SENDING FILE " + file.getName() + " : The other one already had the file.");
             sendingSem.acquire();
             outputStream.flush();
             outputStream.close();
+            inputStream.close();
             socket.close();
             sendingSem.release();
             readSem.acquire();
             fis.close();
             bis.close();
             readSem.release();
-            logger.info("File sent succesfully!");
             // todo make sure this send is also received by the other one.
         } catch(Exception e){
             logger.error(e);
         }
+        return fileStatus;
     }
 }

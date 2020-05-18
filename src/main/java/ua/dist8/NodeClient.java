@@ -2,6 +2,7 @@ package ua.dist8;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -11,6 +12,7 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 
 import java.net.*;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.concurrent.ConcurrentHashMap;
@@ -26,6 +28,7 @@ public class NodeClient {
     private static final Logger logger = LogManager.getLogger();
     private static NodeClient nodeClient = new NodeClient();
     private static Map<String, InetAddress> replicatedFilesMap;
+    private static volatile InetAddress ownNodeAddress;
 
     /**
      * Constructor for the NodeClient class
@@ -39,10 +42,58 @@ public class NodeClient {
         replicatedFilesMap = new ConcurrentHashMap<>();
         previousID = Hashing.createHash(nodeName);
         nextID = previousID;
+        ownNodeAddress = null;
     }
 
     public static NodeClient getInstance(){
         return nodeClient;
+    }
+
+    public InetAddress getNsIP(){
+        return nsIP;
+    }
+
+    public static InetAddress getOwnNodeAddress(){
+        return ownNodeAddress;
+    }
+
+    public Boolean nodeExists(Integer hash){
+        try {
+            if (nsIP == null) {
+                logger.warn("Not connected to any NameServer, Please use !connect before requesting a file");
+                return false;
+            }
+            String hostName = nsIP.getHostAddress();
+            String url = "http://" + hostName + ":8080/nodeExists?nodeHash=" + hash;
+            logger.debug("Trying to connect with " + url);
+            HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+
+            connection.setRequestMethod("GET");
+
+            int responseCode = connection.getResponseCode();
+            logger.debug("Connecting to " + url + "Response code = " + responseCode);
+            if (responseCode == 200) { //connection successful
+                String response = "";
+                Scanner scanner = new Scanner(connection.getInputStream());
+                while (scanner.hasNextLine()) {
+                    response += scanner.nextLine();
+                    response += "\n";
+                }
+                scanner.close();
+                // returns a string
+                JSONObject jsonResponse = new JSONObject(response);
+                Boolean nodeExists = jsonResponse.getBoolean("nodeExists");
+                logger.debug("The value of nodeExists is: " + nodeExists);
+                return nodeExists;
+            }
+            logger.error("Request failed!");
+
+        } catch(Exception e){
+            logger.error(e);
+        }
+
+        // an error happened
+        return false;
     }
 
     /**
@@ -54,53 +105,27 @@ public class NodeClient {
      * @param nodeIP is the IP-address of the node that wants to join
      */
     public void multicastHandler(String receivedNodeName, InetAddress nodeIP) throws IOException, JSONException, InterruptedException {
-        logger.debug("Received a multicast from another Node on the network, processing message ...");
+        logger.debug("Received a multicast from another Node (" + nodeIP.getHostName() + ") on the network, processing message ...");
+        while (ownNodeAddress == null){}
         Integer hash = Hashing.createHash(receivedNodeName);
-        try {
-            nodeName = InetAddress.getLocalHost().getHostName();
-        } catch (Exception e) {
-            logger.error(e);
-        }
-
-        Integer currentID = Hashing.createHash(nodeName);
-        logger.info("my own hash is: " + currentID);
-        logger.info("my Previous is: " + previousID);
-        logger.info("my next is: " + nextID);
-        logger.info("The new one is: " + hash);
-
-        JSONObject json = new JSONObject();
-        json.put("typeOfMsg","multicastReply");
-        if(currentID<hash && hash<nextID){
-            logger.debug("In the first if of multicastReply.");
-            nextID = hash;
-            if (previousID.equals(currentID)){
-                previousID = hash;
+        if (nodeExists(hash) && !nodeIP.equals(ownNodeAddress)) {
+            logger.info("This is a valid node.");
+            try {
+                nodeName = InetAddress.getLocalHost().getHostName();
+            } catch (Exception e) {
+                logger.error(e);
             }
-            json.put("typeOfNode", "CL");
-            json.put("setAs", "next");
-            json.put("currentID", currentID);
-            json.put("newNodeID", nextID);
-            sendUnicastMessage(nodeIP, json);
-            logger.debug("NextID changed to: " + nextID + " Sending unicast message.. He is not an end node.");
-        }
-        if(previousID< hash && hash<currentID){
-            logger.debug("In the second if of multicastReply.");
-            previousID = hash;
-            if (nextID.equals(currentID)){
-                nextID = hash;
-            }
-            json.put("typeOfNode", "CL");
-            json.put("setAs", "previous");
-            json.put("currentID", currentID);
-            json.put("newNodeID", previousID);
-            sendUnicastMessage(nodeIP, json);
-            logger.debug("PreviousID changed to: " + previousID + " Sending unicast message.. He is not an end node.");
-        }
-        // here we will look if the currentID node is the node with the highest or lowes ID number
-        if(currentID>=nextID ){ // there is only one node, or multiple nodes but you have the highest ID number because next is lower.
-            if (currentID < hash) {
-                // the new node has a higher ID
-                logger.debug("In the third if part 1 of multicastReply.");
+
+            Integer currentID = Hashing.createHash(nodeName);
+            logger.info("my own hash is: " + currentID);
+            logger.info("my Previous is: " + previousID);
+            logger.info("my next is: " + nextID);
+            logger.info("The new one is: " + hash);
+
+            JSONObject json = new JSONObject();
+            json.put("typeOfMsg", "multicastReply");
+            if (currentID < hash && hash < nextID) {
+                logger.debug("In the first if of multicastReply.");
                 nextID = hash;
                 if (previousID.equals(currentID)) {
                     previousID = hash;
@@ -110,54 +135,95 @@ public class NodeClient {
                 json.put("currentID", currentID);
                 json.put("newNodeID", nextID);
                 sendUnicastMessage(nodeIP, json);
-                logger.debug("NextID changed to: " + nextID + " Sending unicast message.. He is an end node.");
+                logger.debug("NextID changed to: " + nextID + " Sending unicast message.. He is not an end node.");
             }
-            if(currentID > hash && hash < nextID){
-                // the new node has a higher ID
-                logger.debug("In the third if part 2 of multicastReply.");
-                nextID = hash;
-                if (previousID.equals(currentID)) {
+            if (previousID < hash && hash < currentID) {
+                logger.debug("In the second if of multicastReply.");
+                previousID = hash;
+                if (nextID.equals(currentID)) {
+                    nextID = hash;
+                }
+                json.put("typeOfNode", "CL");
+                json.put("setAs", "previous");
+                json.put("currentID", currentID);
+                json.put("newNodeID", previousID);
+                sendUnicastMessage(nodeIP, json);
+                logger.debug("PreviousID changed to: " + previousID + " Sending unicast message.. He is not an end node.");
+            }
+            // here we will look if the currentID node is the node with the highest or lowes ID number
+            if (currentID >= nextID) { // there is only one node, or multiple nodes but you have the highest ID number because next is lower.
+                if (currentID < hash) {
+                    // the new node has a higher ID
+                    logger.debug("In the third if part 1 of multicastReply.");
+                    nextID = hash;
+                    if (previousID.equals(currentID)) {
+                        previousID = hash;
+                    }
+                    json.put("typeOfNode", "CL");
+                    json.put("setAs", "next");
+                    json.put("currentID", currentID);
+                    json.put("newNodeID", nextID);
+                    sendUnicastMessage(nodeIP, json);
+                    logger.debug("NextID changed to: " + nextID + " Sending unicast message.. He is an end node.");
+                }
+                if (currentID > hash && hash < nextID) {
+                    // the new node has a higher ID
+                    logger.debug("In the third if part 2 of multicastReply.");
+                    nextID = hash;
+                    if (previousID.equals(currentID)) {
+                        previousID = hash;
+                    }
+                    json.put("typeOfNode", "CL");
+                    json.put("setAs", "next");
+                    json.put("currentID", currentID);
+                    json.put("newNodeID", nextID);
+                    sendUnicastMessage(nodeIP, json);
+                    logger.debug("NextID changed to: " + nextID + " Sending unicast message.. He is an end node.");
+                }
+            }
+            if (currentID <= previousID) { // you have the lowest nodeID on the network.
+                if (currentID > hash) {
+                    // The new node has a lower ID.
+                    logger.debug("In the fourth if part 1 of multicastReply.");
                     previousID = hash;
+                    if (nextID.equals(currentID)) {
+                        nextID = hash;
+                    }
+                    json.put("typeOfNode", "CL");
+                    json.put("setAs", "previous");
+                    json.put("currentID", currentID);
+                    json.put("newNodeID", previousID);
+                    logger.debug("PreviousID changed to: " + previousID + " Sending unicast message.. He is an end node.");
+                    sendUnicastMessage(nodeIP, json);
                 }
-                json.put("typeOfNode", "CL");
-                json.put("setAs", "next");
-                json.put("currentID", currentID);
-                json.put("newNodeID", nextID);
-                sendUnicastMessage(nodeIP, json);
-                logger.debug("NextID changed to: " + nextID + " Sending unicast message.. He is an end node.");
+                if (currentID < hash && previousID < hash) {
+                    // The new node has a lower ID.
+                    logger.debug("In the fourth if part 2 of multicastReply.");
+                    previousID = hash;
+                    if (nextID.equals(currentID)) {
+                        nextID = hash;
+                    }
+                    json.put("typeOfNode", "CL");
+                    json.put("setAs", "previous");
+                    json.put("currentID", currentID);
+                    json.put("newNodeID", previousID);
+                    logger.debug("PreviousID changed to: " + previousID + " Sending unicast message.. He is an end node.");
+                    sendUnicastMessage(nodeIP, json);
+                }
             }
-        }
-        if(currentID<=previousID){ // you have the lowest nodeID on the network.
-            if(currentID > hash) {
-                // The new node has a lower ID.
-                logger.debug("In the fourth if part 1 of multicastReply.");
-                previousID = hash;
-                if (nextID.equals(currentID)) {
-                    nextID = hash;
+            if (nextID.equals(previousID)) {
+                if (!nextID.equals(currentID)) {
+                    logger.debug("STARTING REPLICATION FROM MULTICAST.");
+                    replicationStart();
                 }
-                json.put("typeOfNode", "CL");
-                json.put("setAs", "previous");
-                json.put("currentID", currentID);
-                json.put("newNodeID", previousID);
-                logger.debug("PreviousID changed to: " + previousID + " Sending unicast message.. He is an end node.");
-                sendUnicastMessage(nodeIP, json);
-            }
-            if (currentID < hash && previousID < hash){
-                // The new node has a lower ID.
-                logger.debug("In the fourth if part 2 of multicastReply.");
-                previousID = hash;
-                if (nextID.equals(currentID)) {
-                    nextID = hash;
-                }
-                json.put("typeOfNode", "CL");
-                json.put("setAs", "previous");
-                json.put("currentID", currentID);
-                json.put("newNodeID", previousID);
-                logger.debug("PreviousID changed to: " + previousID + " Sending unicast message.. He is an end node.");
-                sendUnicastMessage(nodeIP, json);
+            } else {
+                logger.debug("STARTING CHECKIFOWNERCHANGED FROM MULTICAST.");
+                checkIfOwnerChanged();
             }
         }
     }
+
+
 
     /**
      * This method will send a unicast message to a given InetAddress as a respons to a multicast message.
@@ -231,24 +297,28 @@ public class NodeClient {
         logger.info("Received a reply of our discovery multicast message from the NamingServer.");
         int amountOfNodes = (json.getInt("amountOfNodes"));
         if(amountOfNodes > 0){
-            logger.debug("Succesfully connected to " + nsIP.getHostName() + ". The amount of other nodes in the network = " + amountOfNodes);
+            logger.debug("Succesfully connected to " + nsIP.getHostName() + ". The number of other nodes in the network before I entered is " + amountOfNodes);
             this.nsIP = nsIP; //This will save the IP-address of the NS for later use
+            ownNodeAddress = nodeRequest(Hashing.createHash(InetAddress.getLocalHost().getHostName()));
+            logger.debug("STARTING REPLICATION FROM RECEIVEMULTICASTREPLYNS.");
+            nodeClient.replicationStart();
         }
         else if(amountOfNodes == 0){
             logger.debug("Succesfully connected to " + nsIP.getHostName() +". I am the only node in the network, setting next/previous ID to myself");
             this.nsIP = nsIP; //This will save the IP-address of the NS for later use
+            ownNodeAddress = nodeRequest(Hashing.createHash(InetAddress.getLocalHost().getHostName()));
             nextID = Hashing.createHash(nodeName);
             previousID = Hashing.createHash(nodeName);
         }
         else if(amountOfNodes == -1){
             this.nsIP = nsIP; //This will save the IP-address of the NS for later use
+            ownNodeAddress = nodeRequest(Hashing.createHash(InetAddress.getLocalHost().getHostName()));
             logger.debug("I am already in the network! Fetching my next and previous neighbour from NS! ");
             //todo getNeighbours
         }
-        else{
+        else {
             logger.error("Something went wrong, please try again...");
         }
-
     }
 
     /***
@@ -375,7 +445,6 @@ public class NodeClient {
         String hostName = nsIP.getHostAddress();
         String url ="http://"+hostName+":8080/fileRequest?filename=" + filename;
         logger.debug("Trying to connect with "+url);
-        //String url ="http://host2/fileRequest?filename=" + filename;
         HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
 
         connection.setRequestMethod("GET");
@@ -403,6 +472,86 @@ public class NodeClient {
     }
 
     /**
+     * REST request to get the number of nodes in the network.
+     * @return
+     * @throws IOException
+     */
+    public int getNumberOfNodes() throws IOException {
+        if (nsIP == null){
+            logger.warn("Not connected to any NameServer, Please use !connect before requesting a file");
+            return -1;
+        }
+        String hostName = nsIP.getHostAddress();
+        String url ="http://"+hostName+":8080/numberOfNodes";
+        logger.debug("Trying to connect with "+url);
+        HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+
+        connection.setRequestMethod("GET");
+
+        int responseCode = connection.getResponseCode();
+        logger.debug("Connecting to " + url +"Response code = "+ responseCode);
+        if(responseCode == 200){ //connection successful
+            String response = "";
+            Scanner scanner = new Scanner(connection.getInputStream());
+            while(scanner.hasNextLine()){
+                response += scanner.nextLine();
+                response += "\n";
+            }
+            scanner.close();
+            // returns a string
+            JSONObject jsonResponse = new JSONObject(response);
+            int numberOfNodes = jsonResponse.getInt("numberOfNodes");
+            logger.debug("Number of nodes is: "+ (numberOfNodes + 1));
+            return numberOfNodes + 1;
+        }
+        logger.error("Request failed!");
+
+        // an error happened
+        return -1;
+    }
+
+
+    /**
+     * REST request to get InetAddress of node location.
+     * @param nodeHash
+     * @return
+     * @throws IOException
+     */
+    public InetAddress nodeRequest(Integer nodeHash) throws IOException {
+        if (nsIP == null){
+            logger.warn("Not connected to any NameServer, Please use !connect before requesting a file");
+            return null;
+        }
+        String hostName = nsIP.getHostAddress();
+        String url ="http://"+hostName+":8080/nodeRequest?nodeHash=" + nodeHash;
+        logger.debug("Trying to connect with "+url);
+        HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+
+        connection.setRequestMethod("GET");
+
+        int responseCode = connection.getResponseCode();
+        logger.debug("Connecting to " + url +"Response code = "+ responseCode);
+        if(responseCode == 200){ //connection successful
+            String response = "";
+            Scanner scanner = new Scanner(connection.getInputStream());
+            while(scanner.hasNextLine()){
+                response += scanner.nextLine();
+                response += "\n";
+            }
+            scanner.close();
+            // returns a string
+            JSONObject jsonResponse = new JSONObject(response);
+            String ip = jsonResponse.getString("inetAddress");
+            logger.debug("Hostname of node is: "+ip);
+            return InetAddress.getByName(ip);
+        }
+        logger.error("Request failed!");
+
+        // an error happened
+        return null;
+    }
+
+    /**
      * Print the neighbours of this node.
      */
 
@@ -411,37 +560,325 @@ public class NodeClient {
         logger.debug("Hashing my own nodeName: "+nodeName+"\nMy own hash is: "+myHash+"\nPrevious NodeID is: "+previousID+"\n Next NodeID is: "+nextID);
     }
 
-    public void fileRequest(Socket clientSocket){
+    //public void fileRequest(Socket clientSocket){
         // todo finish this method.
-    }
+    //}
 
-    public void receiveReplication(InputStream inputStream, JSONObject json){
+    public void receiveFile(InputStream inputStream, JSONObject json, OutputStream outputStream, String type){ // todo if file already exists, don't save it!!
         try {
-            byte[] contents = new byte[10000];
+            int numberOfNodes = getNumberOfNodes();
+            logger.debug("The number of nodes is: " + numberOfNodes);
+            int fileStatus = 2; // We assume that standard everything is ok and we are the correct receiver.
             String fileName = json.getString("fileName");
-            logger.info("We will receive a replicated file "+ fileName);
-            //Initialize the FileOutputStream to the output file's full path.
-            fileSem.acquire();
-            FileOutputStream fos = new FileOutputStream("/home/pi/replicatedFiles/" + fileName); // todo make sure that this folder exists
-            BufferedOutputStream bos = new BufferedOutputStream(fos);
-            fileSem.release();
 
-            //Number of bytes read in one read() call
-            int bytesRead = 0;
-            logger.info("Starting to write the file to: /home/pi/replicatedFiles/" + fileName);
-            while ((bytesRead = inputStream.read(contents)) != -1) // -1 ==> no data left to read.
+            if(type.equals("replication")){
+                logger.info("RECEIVING FILE " + fileName + " : The type of file is a replication file.");
+                File file = new File("/home/pi/localFiles/" + fileName);
+                if(file.exists() && numberOfNodes > 2){
+                    fileStatus = 1; // we have the file locally.
+                    logger.info("RECEIVING FILE " + fileName + " : File is already stored locally.. \nGiving a response back.\n");
+                }
+                file = new File("/home/pi/ownedFiles/" + fileName);
+                if(file.exists() && numberOfNodes > 2){
+                    fileStatus = 0; // We are the owners of the file.
+                    logger.info("RECEIVING FILE " + fileName + " : We own the file.. \nGiving a response back.\n");
+                }
+            }
+
+            logger.info("RECEIVING FILE " + fileName + " : Send JSON reply.");
+            outputStream.write(fileStatus);
+            logger.info("RECEIVING FILE " + fileName + " : JSON reply sent.");
+            logger.debug("RECEIVING FILE " + fileName + " : sent fileStatus equaling " + fileStatus);
+
+            if(fileStatus == 2) {
+                byte[] contents = new byte[10000];
+                logger.info("RECEIVING FILE " + fileName + " : We will receive a replicated file " + fileName);
+                File folder;
+                if (type.equals("replication")) {
+                    folder = new File("/home/pi/ownedFiles/");
+                } else if (type.equals("log")) {
+                    folder = new File("/home/pi/logFiles/");
+                } else throw new Exception("Wrong typeOfMsg!");
+                if (!folder.exists()) {
+                    boolean succes = folder.mkdir();
+                    if (!succes) {
+                        throw new Exception("Could not create directory " + folder.getName() + "!");
+                    }
+                }
+                //Initialize the FileOutputStream to the output file's full path.
                 fileSem.acquire();
-                bos.write(contents, 0, bytesRead); // content, offset, how many bytes are read.
+                FileOutputStream fos;
+                if (type.equals("replication")) {
+                    fos = new FileOutputStream("/home/pi/ownedFiles/" + fileName);
+                } else {
+                    fos = new FileOutputStream("/home/pi/logFiles/" + fileName);
+                }
+                BufferedOutputStream bos = new BufferedOutputStream(fos);
                 fileSem.release();
-            fileSem.acquire();
-            bos.flush();
-            bos.close();
-            fos.close();
-            fileSem.release();
 
-            logger.info("File saved successfully!");
+                //Number of bytes read in one read() call
+                int bytesRead = 0;
+                if (type.equals("replication")) {
+                    logger.info("RECEIVING FILE " + fileName + " : Starting to write the file to: /home/pi/ownedFiles/" + fileName);
+                } else {
+                    logger.info("RECEIVING FILE " + fileName + " : Starting to write the file to: /home/pi/logFiles/" + fileName);
+                }
+                while ((bytesRead = inputStream.read(contents)) != -1) { // -1 ==> no data left to read.
+                    fileSem.acquire();
+                    bos.write(contents, 0, bytesRead); // content, offset, how many bytes are read.
+                    fileSem.release();
+                }
+                fileSem.acquire();
+                bos.flush();
+                bos.close();
+                fos.close();
+                fileSem.release();
+
+                logger.info("RECEIVING FILE " + fileName + " : File saved successfully!");
+            }
         } catch(Exception e){
             logger.error(e);
         }
     }
+
+    public void checkIfOwnerChanged(){
+        try {
+            logger.info("Checking if the files have new owners.");
+            File folder = new File("/home/pi/ownedFiles/");
+
+            if(!folder.exists()){
+                boolean success = folder.mkdir();
+                if(!success){
+                    throw new Exception("Could not create directory " + folder.getName() + "!");
+                }
+            }
+            File[] listOfFiles = folder.listFiles();
+            if(listOfFiles != null) {
+                for (File file : listOfFiles) {
+                    logger.info("SENDING FILE " + file.getName() + " : Check who is the owner of file "+ file.getName() + "according to the NamingServer.");
+                    InetAddress[] address = {fileRequest(file.getName())};
+
+                    if(!address[0].equals(ownNodeAddress)){
+                        int fileStatus = FileTransfer.sendFile(address, file.getPath(), "replication");
+                        moveFile(file, "/home/pi/replicatedFiles/");
+                        if(fileStatus != 0){
+                            logger.info("SENDING FILE " + file.getName() + " : File successfully replicated.");
+                            fileSem.acquire();
+                            File logfile = new File("/home/pi/logFiles/" + file.getName() + "Log");
+                            FileInputStream fis = new FileInputStream(logfile); // Reads bytes from the file.
+                            BufferedInputStream bis = new BufferedInputStream(fis); // Gives extra functionality to fileInputStream so it can buffer data.
+                            byte[] contents;
+                            StringBuilder logstring = new StringBuilder();
+                            long fileLength = logfile.length();
+                            logger.info("SENDING FILE " + file.getName() + " : The size of the logfile is: " + fileLength +" bytes");
+                            long current = 0;
+
+                            while(current!=fileLength){
+                                int size = 10000;
+                                if(fileLength - current >= size)
+                                    current += size;
+                                else{
+                                    size = (int)(fileLength - current);
+                                    current = fileLength;
+                                }
+                                contents = new byte[size];
+                                bis.read(contents, 0, size);
+                                String tempString = new String(contents);
+                                logger.debug("SENDING FILE " + file.getName() + " : tempString is " + tempString);
+                                logstring.append(tempString);
+                                logger.debug("SENDING FILE " + file.getName() + " : logstring is " + logstring);
+                            }
+                            logger.debug("SENDING FILE " + file.getName() + " : The logstring contains: " + logstring);
+                            JSONObject logjson = new JSONObject(logstring.toString());
+                            logjson.put("owner", address[0].getHostName());
+                            logjson.put("isDownloaded", true);
+                            logjson.put("downloadLocations", logjson.getString("downloadLocations").concat("," + ownNodeAddress.getHostName()));
+                            fis.close();
+                            bis.close();
+
+                            fileSem.release();
+
+                            contents = logjson.toString().getBytes();
+                            int bytesLength = contents.length;
+                            fileSem.acquire();
+                            FileOutputStream fos = new FileOutputStream("/home/pi/logFiles/" + file.getName() + "Log"); // todo make sure that this folder exists
+                            BufferedOutputStream bos = new BufferedOutputStream(fos);
+                            bos.write(contents, 0, bytesLength); // content, offset, how many bytes are read.
+                            bos.flush();
+                            bos.close();
+                            fos.close();
+                            fileSem.release();
+                            logger.info("SENDING FILE " + file.getName() + " : log file adjusted.");
+                            logger.info("SENDING FILE " + file.getName() + " : Sending log file to " + address[0] + ".");
+                            FileTransfer.sendFile(address, "/home/pi/logFiles/" + file.getName() + "Log", "log");
+                            logger.info("SENDING FILE " + file.getName() + " : Log file successfully sent!");
+                        }
+                        File logfile = new File("/home/pi/logFiles/" + file.getName() + "Log");
+                        logger.info("SENDING FILE " + file.getName() + " : Remove local log file.");
+                        boolean success = logfile.delete();
+                        if(!success){
+                            throw new Exception("Could not delete logFile " + logfile.getName() + "!");
+                        }
+                    }
+                }
+            }
+            else{
+                logger.warn("No local files to replicate.");
+            }
+        } catch (Exception e){
+            logger.error(e);
+        }
+    }
+
+    public void createLogFile(InetAddress inet, String fileName){
+        try {
+            JSONObject json = new JSONObject();
+            json.put("owner", inet.getHostName());
+            json.put("isDownloaded", false);
+            json.put("downloadLocations", ownNodeAddress.getHostName());
+
+            File folder = new File("/home/pi/logFiles/");
+            if(!folder.exists()){
+                boolean success = folder.mkdir();
+                if(!success){
+                    throw new Exception("Could not create directory " + folder.getName() + "!");
+                }
+            }
+
+            byte[] contents = json.toString().getBytes();
+            int bytesLength = contents.length;
+            fileSem.acquire();
+            FileOutputStream fos = new FileOutputStream("/home/pi/logFiles/" + fileName); // todo make sure that this folder exists
+            BufferedOutputStream bos = new BufferedOutputStream(fos);
+            bos.write(contents, 0, bytesLength); // content, offset, how many bytes are read.
+            bos.flush();
+            bos.close();
+            fos.close();
+            fileSem.release();
+        } catch (Exception e){
+            logger.error(e);
+        }
+    }
+
+    /**
+     *
+     * @param file
+     * @param path to were to write
+     */
+    public void moveFile(File file, String path){
+        // renaming the file and moving it to a new location
+        try {
+            fileSem.acquire();
+            File folder = new File(path);
+            if(!folder.exists()){
+                boolean success = folder.mkdir();
+                if(!success){
+                    throw new Exception("Could not create directory " + folder.getName() + "!");
+                }
+            }
+            logger.info("Moving file " + file.getName() + " to " + path + file.getName());
+            if (file.renameTo(new File(path + file.getName()))) {
+                // if file copied successfully then delete the original file
+                file.delete();
+                logger.info("File moved successfully");
+            } else {
+                logger.warn("Failed to move the file");
+            }
+            fileSem.release();
+        } catch(Exception e){
+            logger.error(e);
+            fileSem.release();
+        }
+    }
+
+    public void prepareFoldersStartup(){
+        try {
+            File folder = new File("/home/pi/ownedFiles/");
+            if (folder.exists()) {
+                File[] listOfFiles = folder.listFiles();
+                if(listOfFiles != null) {
+                    for (File file : listOfFiles) {
+                        file.delete();
+                    }
+                }
+            }
+            folder = new File("/home/pi/logFiles/");
+            if (folder.exists()) {
+                File[] listOfFiles = folder.listFiles();
+                if(listOfFiles != null) {
+                    for (File file : listOfFiles) {
+                        file.delete();
+                    }
+                }
+            }
+            folder = new File("/home/pi/replicatedFiles/");
+            if (folder.exists()) {
+                File[] listOfFiles = folder.listFiles();
+                if(listOfFiles != null) {
+                    for (File file : listOfFiles) {
+                        file.delete();
+                    }
+                }
+            }
+        }
+        catch (Exception e){
+            logger.error(e);
+        }
+    }
+
+    public void replicationStart()
+    {
+        try {
+            prepareFoldersStartup();
+            logger.info("Starting replication process.");
+            File folder = new File("/home/pi/localFiles/");
+            if(!folder.exists()){
+                boolean success = folder.mkdir();
+                if(!success){
+                    throw new Exception("Could not create directory " + folder.getName() + "!");
+                }
+            }
+            File[] listOfFiles = folder.listFiles();
+            if(listOfFiles != null) {
+                for (File file : listOfFiles) {
+                    logger.info("SENDING FILE " + file.getName() + " : replicating file "+file.getName());
+                    InetAddress[] address = {fileRequest(file.getName())};
+                    logger.debug("SENDING FILE " + file.getName() + " : Address to send to is: " + address[0]);
+                    logger.debug("SENDING FILE " + file.getName() + " : My own localHost address is: " + ownNodeAddress);
+                    if(address[0].equals(ownNodeAddress)){
+                        logger.warn("SENDING FILE " + file.getName() + " : Address to send to is myself, changing this address.");
+                        while(address[0].equals(ownNodeAddress)){
+                            address[0] = nodeRequest(previousID);
+                            logger.info("SENDING FILE " + file.getName() + " : Current address to send to is: " + address[0]);
+                        }
+                    }
+                    int proceed = FileTransfer.sendFile(address, file.getPath(), "replication");
+                    if(proceed != 0){
+                        logger.info("SENDING FILE " + file.getName() + " : File successfully replicated.");
+                        logger.info("SENDING FILE " + file.getName() + " : Creating a log file for file " + file.getName() + "Log");
+                        createLogFile(address[0], file.getName() + "Log");
+                        logger.info("SENDING FILE " + file.getName() + " : Sending log file to " + address[0]);
+                        FileTransfer.sendFile(address, "/home/pi/logFiles/" + file.getName() + "Log", "log");
+                    }
+                    logger.info("SENDING FILE " + file.getName() + " : Removing local log file.");
+                    File logfile = new File("/home/pi/logFiles/" + file.getName() + "Log");
+                    boolean success = logfile.delete();
+                    if(!success){
+                        throw new Exception("Could not delete logFile " + logfile.getName() + "!");
+                    }
+                    if(proceed != 0)
+                        logger.info("SENDING FILE " + file.getName() + " : Log file successfully sent!");
+                    else
+                        logger.info("SENDING FILE " + file.getName() + " : File transfer aborted.");
+
+                }
+            }
+            else{
+                logger.warn("No local files to replicate.");
+            }
+        } catch (Exception e){
+            logger.error(e);
+        }
+    }
+
 }

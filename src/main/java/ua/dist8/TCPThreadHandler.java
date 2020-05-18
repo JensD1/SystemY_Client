@@ -6,6 +6,7 @@ import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
 
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.Socket;
 
 public class TCPThreadHandler extends Thread {
@@ -39,12 +40,23 @@ public class TCPThreadHandler extends Thread {
                     }
                     case "fileRequest": {
                         NodeClient nodeClient = NodeClient.getInstance();
-                        nodeClient.fileRequest(clientSocket); // todo finish this method.
+                        //nodeClient.fileRequest(String fileName); // todo finish this method.
                         break;
                     }
                     case "replication": {
+                        logger.info("Received a replication message.");
                         NodeClient nodeClient = NodeClient.getInstance();
-                        nodeClient.receiveReplication(clientInput, json); // todo finish this method.
+                        OutputStream clientOutput = clientSocket.getOutputStream();
+                        nodeClient.receiveFile(clientInput, json, clientOutput, json.getString("typeOfMsg"));
+                        clientOutput.close();
+                        break;
+                    }
+                    case "log": {
+                        logger.info("Received a log message.");
+                        NodeClient nodeClient = NodeClient.getInstance();
+                        OutputStream clientOutput = clientSocket.getOutputStream();
+                        nodeClient.receiveFile(clientInput, json, clientOutput, json.getString("typeOfMsg"));
+                        clientOutput.close();
                         break;
                     }
                     case "multicastReply": {
@@ -56,6 +68,8 @@ public class TCPThreadHandler extends Thread {
                         }
                         break;
                     }
+                    default:
+                        logger.error("Received a wrong typeOfMessage!");
                 }
             }
             clientInput.close();
