@@ -12,10 +12,16 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 
 import java.net.*;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentSkipListMap;
+
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.concurrent.ConcurrentHashMap;
+
 import java.util.concurrent.Semaphore;
 
 public class NodeClient {
@@ -29,6 +35,7 @@ public class NodeClient {
     private static NodeClient nodeClient = new NodeClient();
     private static Map<String, InetAddress> replicatedFilesMap;
     private static volatile InetAddress ownNodeAddress;
+
 
     /**
      * Constructor for the NodeClient class
@@ -365,6 +372,30 @@ public class NodeClient {
         logger.info("Multicast bootstrap message is sent.");
     }
 
+    public String getFileLocation(File file) throws IOException {
+        String name = nsIP.getHostAddress();
+
+        String filename = file.getName();
+        logger.debug("Requesting file" + filename + " from NamingServer...");
+        URL urlFile = new URL("http://" + name + ":8080/fileRequest?filename=" + filename);
+        HttpURLConnection conFile = (HttpURLConnection) urlFile.openConnection();
+        conFile.setRequestMethod("GET");
+        int responseCodeFile = conFile.getResponseCode();
+        logger.debug("Connecting to " + urlFile + "Response code = " + responseCodeFile);
+        String responseFile = "";
+        Scanner scannerFile = new Scanner(conFile.getInputStream());
+        while (scannerFile.hasNextLine()) {
+            responseFile += scannerFile.nextLine();
+            responseFile += "\n";
+        }
+        scannerFile.close();
+        conFile.disconnect();
+        logger.debug("File location received from NamingServer!");
+        JSONObject responseFileJSON = new JSONObject(responseFile);
+
+        return responseFileJSON.getString("address");
+    }
+
     /***
      * This function will run when this node wants to shutdown itself, sending three messages in total to:
      * Naming server
@@ -375,10 +406,11 @@ public class NodeClient {
      */
     public void shutdown (){
         try{
+            String name = nsIP.getHostAddress();
             Integer hash = Hashing.createHash(nodeName);
             logger.debug("Starting shutdown procedure...");
-            //This part is for the neighboring nodes:
-            String name = nsIP.getHostAddress();
+
+            //This part is for receiving neighboring nodes.
             logger.info("The hostaddress of the namingserver is " + name);
             JSONObject neighbourJSON = new JSONObject();
             neighbourJSON.put("typeOfMsg", "shutdown");
@@ -390,7 +422,7 @@ public class NodeClient {
             con.setRequestMethod("GET");
             int responseCode = con.getResponseCode();
             logger.debug("Connecting to " + url + "Response code = " + responseCode);
-            if (responseCode == 200) { //connection successful, NS can only remove the mode if he finds the node
+            if (responseCode == 200) { //connection successful, NS can only remove the node if he finds it
                 String response = "";
                 Scanner scanner = new Scanner(con.getInputStream());
                 while (scanner.hasNextLine()) {
@@ -399,9 +431,62 @@ public class NodeClient {
                 }
                 scanner.close();
                 con.disconnect();
-
                 logger.debug("Neighbours received from NamingServer!");
                 JSONObject responseJSON = new JSONObject(response);
+
+                // Send a message to the owners of each local file. At the owner, the removeReplicatedFiles method will be executed
+                File folder = new File("/home/pi/localFiles/");
+                File[] listOfFiles = folder.listFiles();
+                for (File file : listOfFiles) {
+                    if (file.isFile()) {
+                        String filename = file.getName();
+                        String destAddress = getFileLocation(file);
+                        JSONObject json = new JSONObject();
+                        json.put("typeOfMsg", "replicationShutdown");
+                        json.put("typeOfSource","local");
+                        json.put("typeOfDest","owned");
+                        json.put("typeOfNode", "CL");
+                        json.put("fileName", filename);
+                        logger.debug("Sending message to owner of local file " + filename);
+                        sendUnicastMessage(InetAddress.getByName(destAddress), json);
+                    }
+                }
+
+                // Send a message to the owners of each replicated file. At the owner, the removeReplicatedFiles method will be executed
+                folder = new File("/home/pi/replicatedFiles/");
+                listOfFiles = folder.listFiles();
+                for (File file : listOfFiles) {
+                    if (file.isFile()) {
+                        String filename = file.getName();
+                        String destAddress = getFileLocation(file);
+                        JSONObject json = new JSONObject();
+                        json.put("typeOfMsg", "replicationShutdown");
+                        json.put("typeOfSource","replicated");
+                        json.put("typeOfDest","owned");
+                        json.put("typeOfNode", "CL");
+                        json.put("fileName", filename);
+                        logger.debug("Sending message to owner of replicated file " + filename);
+                        sendUnicastMessage(InetAddress.getByName(destAddress), json);
+                    }
+                }
+
+                // Send the owned files to the previous neighbour.
+                folder = new File("/home/pi/ownedFiles/");
+                listOfFiles = folder.listFiles();
+                for (File file : listOfFiles) {
+                    if (file.isFile()) {
+                        //ToDO Send the file and its log to the previous neighbour + update log file
+
+                        //update log file
+
+                        //get neighbour address but look out for edge case!
+
+                        //send msg (with fileTransfer) to previous neighbour: voor file, type is replicated en voor log type is log.
+                        //fileTransfer.sendFile();
+                    }
+                }
+
+
                 logger.debug("Sending Unicast message to neighbours..");
                 String previousNeighbor = responseJSON.getString("previousNode");
                 logger.debug("Previous host is " + previousNeighbor);
@@ -420,6 +505,7 @@ public class NodeClient {
                 shutdownJSON.put("ID", hash);
                 logger.debug("Shutdown message for ID: " + hash);
                 sendUnicastMessage(nsIP, shutdownJSON);
+
                 //resetting neighbourIDs
                 nextID = Hashing.createHash(nodeName);
                 previousID = nextID;
@@ -432,7 +518,7 @@ public class NodeClient {
     }
 
     /**
-     * REST request to get InetAddress of file location.
+     * REST request to get InetAddress of the node containing the file location.
      * @param filename
      * @return
      * @throws IOException
@@ -559,6 +645,119 @@ public class NodeClient {
         Integer myHash = Hashing.createHash(nodeName);
         logger.debug("Hashing my own nodeName: "+nodeName+"\nMy own hash is: "+myHash+"\nPrevious NodeID is: "+previousID+"\n Next NodeID is: "+nextID);
     }
+    
+    public static Map<String,InetAddress> getReplicatedFilesMap(){
+        return replicatedFilesMap;
+    }
+
+    /***
+     * Delete a replicated file on this node with its logfile if it is an owner if it is never been downloaded
+     * If it's downloaded then only the log file will be updated
+     * @param fileName The name of the file that must be removed
+     * @param typeOfDest The type of the destination
+     */
+    public void removeReplicatedFile(String fileName, String typeOfDest, String typeOfSource, InetAddress sourceAddress) {
+
+        try {
+            //The owner will receive this msg and then checks if this file is already downloaded,
+            //If yes then we will only update the log file
+            //If no then we will remove the log and then the file from all the download locations
+            if(typeOfDest.equals("owner")) {
+
+                File file = new File("/home/pi/logFiles/" +fileName+ "Log");
+                JSONObject jsonLog = new JSONObject(file);
+                boolean isDownloaded = jsonLog.getBoolean("isDownloaded");
+                ArrayList<String> downloadLocations = (ArrayList<String>) jsonLog.get("downloadLocations");
+
+                if (!isDownloaded && typeOfSource.equals("local")){
+
+                    logger.debug("File " + fileName + "has not been downloaded yet so it will be removed...");
+
+                    JSONObject json = new JSONObject();
+                    json.put("typeOfMsg","replicationShutdown");
+                    json.put("typeOfDest","download");
+                    json.put("fileName",fileName);
+
+                    for (String hostName : downloadLocations){
+
+                        sendUnicastMessage(InetAddress.getByName(hostName), json);
+                        logger.debug("Sent unicast to notify download location " + hostName + " must delete " + fileName);
+
+                    }
+
+                    file = new File("/home/pi/ownedFiles/" + fileName);
+                    boolean isDeleted = file.delete();
+                    if (isDeleted){
+
+                        logger.trace("Owned file: "+fileName+ " is successfully deleted");
+                    }
+                    else logger.error("Owned file: " +fileName+ " is not successfully deleted");
+
+                    file = new File("/home/pi/logFiles/" +fileName+ "Log");
+                    isDeleted = file.delete();
+                    if (isDeleted){
+
+                        logger.trace("Log file: "+fileName+ " is successfully deleted");
+                    }
+                    else logger.error("Log file: " +fileName+ " is not successfully deleted");
+
+                }
+                else{
+
+                    logger.debug("File " + fileName + "has already been downloaded so the log file will be updated...");
+
+                    String sourceName = sourceAddress.getHostName();
+                    downloadLocations.remove(sourceName);
+                    jsonLog.put("downloadLocations",downloadLocations);
+                    byte[] contents = jsonLog.toString().getBytes();
+                    int bytesLength = contents.length;
+                    fileSem.acquire();
+                    FileOutputStream fos = new FileOutputStream("/home/pi/logFiles/" + fileName + "Log");
+                    BufferedOutputStream bos = new BufferedOutputStream(fos);
+                    bos.write(contents, 0, bytesLength); // content, offset, how many bytes are read.
+                    bos.flush();
+                    bos.close();
+                    fos.close();
+                    logger.debug("Log file " + fileName + "Log" + " is updated!");
+                    fileSem.release();
+                }
+            }
+
+            else if(typeOfDest.equals("download")) {
+
+                File file = new File("/home/pi/replicatedFiles/" + fileName);
+                boolean isDeleted = file.delete();
+                if (isDeleted){
+
+                    logger.trace("Replicated file: "+fileName+ " is successfully deleted");
+                }
+                else logger.error("Replicated file: " +fileName+ " is not successfully deleted");
+
+            }
+
+        } catch (Exception e) {
+            logger.error(e);
+        }
+
+    }
+
+//    /***
+//     * This method will delete a specific file
+//     * @param directory is the directory of the file
+//     * @param fileName is the name of the file
+//     */
+//    public void removeFile(String directory, String fileName){
+//
+//        File file = new File(directory+fileName);
+//        boolean isDeleted = file.delete();
+//        if (isDeleted){
+//
+//            logger.trace("Shutdown file: "+fileName+ " is successfully deleted");
+//        }
+//        else logger.error("Shutdown file: " +fileName+ " is not successfully deleted");
+//
+//    }
+}
 
     //public void fileRequest(Socket clientSocket){
         // todo finish this method.
@@ -882,3 +1081,4 @@ public class NodeClient {
     }
 
 }
+
