@@ -722,9 +722,31 @@ public class NodeClient {
             //If yes then we will only update the log file
             //If no then we will remove the log and then the file from all the download locations
             if(typeOfDest.equals("owner")) {
-
-                File file = new File("/home/pi/logFiles/" +fileName+ "Log");
-                JSONObject jsonLog = new JSONObject(file);
+                fileSem.acquire();
+                File file = new File("/home/pi/logFiles/" + fileName + "Log");
+                FileInputStream fis = new FileInputStream(file); // Reads bytes from the file.
+                BufferedInputStream bis = new BufferedInputStream(fis); // Gives extra functionality to fileInputStream so it can buffer data.
+                byte[] contents;
+                StringBuilder logstring = new StringBuilder();
+                long fileLength = file.length();
+                long current = 0;
+                while(current!=fileLength){
+                    int size = 10000;
+                    if(fileLength - current >= size)
+                        current += size;
+                    else{
+                        size = (int)(fileLength - current);
+                        current = fileLength;
+                    }
+                    contents = new byte[size];
+                    bis.read(contents, 0, size);
+                    String tempString = new String(contents);
+                    logstring.append(tempString);
+                }
+                fis.close();
+                bis.close();
+                fileSem.release();
+                JSONObject jsonLog = new JSONObject(logstring.toString());
                 boolean isDownloaded = jsonLog.getBoolean("isDownloaded");
                 logger.debug("DownloadLocations before conversion to arraylist: " + jsonLog.getString("downloadLocations"));
                 ArrayList<String> downloadLocations = new ArrayList<String>(Arrays.asList(jsonLog.getString("downloadLocations").split(",")));
