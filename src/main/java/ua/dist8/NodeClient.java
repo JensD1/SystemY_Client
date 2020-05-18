@@ -51,6 +51,7 @@ public class NodeClient {
         previousID = Hashing.createHash(nodeName);
         nextID = previousID;
         ownNodeAddress = null;
+        replicationUpdateThread = null;
     }
 
     public static NodeClient getInstance(){
@@ -504,7 +505,11 @@ public class NodeClient {
                 }
 
                 logger.debug("Stopping replicationUpdate.");
-                replicationUpdateThread.stop();
+                if(replicationUpdateThread != null) {
+                    replicationUpdateThread.stop();
+                }
+                else
+                    logger.warn("replicationUpdateThread is null and not started yet.");
 
                 logger.debug("Sending Unicast message to neighbours..");
                 String previousNeighbor = responseJSON.getString("previousNode");
@@ -1103,7 +1108,10 @@ public class NodeClient {
             }
             logger.debug("Starting ReplicationUpdateThread.");
             replicationUpdateThread = new ReplicationUpdateThread();
-            replicationUpdateThread.start();
+            if(replicationUpdateThread == null)
+                logger.warn("ReplicationUpdateThread could not be initialised");
+            else
+                replicationUpdateThread.start();
         } catch (Exception e){
             logger.error(e);
         }
