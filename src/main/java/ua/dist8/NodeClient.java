@@ -475,14 +475,19 @@ public class NodeClient {
                 listOfFiles = folder.listFiles();
                 for (File file : listOfFiles) {
                     if (file.isFile()) {
-                        //ToDO Send the file and its log to the previous neighbour + update log file
+                        String filename = file.getName();
+                        String previousNeighbor = responseJSON.getString("previousNode");
 
                         //update log file
+                        File logFile = new File("/home/pi/logFiles/" +filename+ "Log");
+                        JSONObject jsonLog = new JSONObject(logFile);
+                        jsonLog.put("owner", previousNeighbor);
 
-                        //get neighbour address but look out for edge case!
-
-                        //send msg (with fileTransfer) to previous neighbour: voor file, type is replicated en voor log type is log.
-                        //fileTransfer.sendFile();
+                        //send msg (with fileTransfer) to previous neighbour:
+                        InetAddress[] address = {InetAddress.getByName(previousNeighbor)};
+                        int succes = FileTransfer.sendFile(address, file.getPath(), "replication");
+                        if(succes!=0)
+                            FileTransfer.sendFile(address, logFile.getPath(), "log");
                     }
                 }
 
@@ -757,7 +762,7 @@ public class NodeClient {
 //        else logger.error("Shutdown file: " +fileName+ " is not successfully deleted");
 //
 //    }
-}
+
 
     //public void fileRequest(Socket clientSocket){
         // todo finish this method.
@@ -1025,6 +1030,42 @@ public class NodeClient {
         }
     }
 
+    public void sendFileAndCreatedLogFile(File file){
+        try {
+            logger.info("SENDING FILE " + file.getName() + " : replicating file " + file.getName());
+            InetAddress[] address = {fileRequest(file.getName())};
+            logger.debug("SENDING FILE " + file.getName() + " : Address to send to is: " + address[0]);
+            logger.debug("SENDING FILE " + file.getName() + " : My own localHost address is: " + ownNodeAddress);
+            if (address[0].equals(ownNodeAddress)) {
+                logger.warn("SENDING FILE " + file.getName() + " : Address to send to is myself, changing this address.");
+                while (address[0].equals(ownNodeAddress)) {
+                    address[0] = nodeRequest(previousID);
+                    logger.info("SENDING FILE " + file.getName() + " : Current address to send to is: " + address[0]);
+                }
+            }
+            int proceed = FileTransfer.sendFile(address, file.getPath(), "replication");
+            if (proceed != 0) {
+                logger.info("SENDING FILE " + file.getName() + " : File successfully replicated.");
+                logger.info("SENDING FILE " + file.getName() + " : Creating a log file for file " + file.getName() + "Log");
+                createLogFile(address[0], file.getName() + "Log");
+                logger.info("SENDING FILE " + file.getName() + " : Sending log file to " + address[0]);
+                FileTransfer.sendFile(address, "/home/pi/logFiles/" + file.getName() + "Log", "log");
+            }
+            logger.info("SENDING FILE " + file.getName() + " : Removing local log file.");
+            File logfile = new File("/home/pi/logFiles/" + file.getName() + "Log");
+            boolean success = logfile.delete();
+            if (!success) {
+                throw new Exception("Could not delete logFile " + logfile.getName() + "!");
+            }
+            if (proceed != 0)
+                logger.info("SENDING FILE " + file.getName() + " : Log file successfully sent!");
+            else
+                logger.info("SENDING FILE " + file.getName() + " : File transfer aborted.");
+        } catch (Exception e){
+            logger.error(e);
+        }
+    }
+
     public void replicationStart()
     {
         try {
@@ -1040,36 +1081,7 @@ public class NodeClient {
             File[] listOfFiles = folder.listFiles();
             if(listOfFiles != null) {
                 for (File file : listOfFiles) {
-                    logger.info("SENDING FILE " + file.getName() + " : replicating file "+file.getName());
-                    InetAddress[] address = {fileRequest(file.getName())};
-                    logger.debug("SENDING FILE " + file.getName() + " : Address to send to is: " + address[0]);
-                    logger.debug("SENDING FILE " + file.getName() + " : My own localHost address is: " + ownNodeAddress);
-                    if(address[0].equals(ownNodeAddress)){
-                        logger.warn("SENDING FILE " + file.getName() + " : Address to send to is myself, changing this address.");
-                        while(address[0].equals(ownNodeAddress)){
-                            address[0] = nodeRequest(previousID);
-                            logger.info("SENDING FILE " + file.getName() + " : Current address to send to is: " + address[0]);
-                        }
-                    }
-                    int proceed = FileTransfer.sendFile(address, file.getPath(), "replication");
-                    if(proceed != 0){
-                        logger.info("SENDING FILE " + file.getName() + " : File successfully replicated.");
-                        logger.info("SENDING FILE " + file.getName() + " : Creating a log file for file " + file.getName() + "Log");
-                        createLogFile(address[0], file.getName() + "Log");
-                        logger.info("SENDING FILE " + file.getName() + " : Sending log file to " + address[0]);
-                        FileTransfer.sendFile(address, "/home/pi/logFiles/" + file.getName() + "Log", "log");
-                    }
-                    logger.info("SENDING FILE " + file.getName() + " : Removing local log file.");
-                    File logfile = new File("/home/pi/logFiles/" + file.getName() + "Log");
-                    boolean success = logfile.delete();
-                    if(!success){
-                        throw new Exception("Could not delete logFile " + logfile.getName() + "!");
-                    }
-                    if(proceed != 0)
-                        logger.info("SENDING FILE " + file.getName() + " : Log file successfully sent!");
-                    else
-                        logger.info("SENDING FILE " + file.getName() + " : File transfer aborted.");
-
+                    sendFileAndCreatedLogFile(file);
                 }
             }
             else{

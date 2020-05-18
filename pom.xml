@@ -10,7 +10,7 @@
     </parent>
     <groupId>ua.dist8</groupId>
     <artifactId>SystemY_Client</artifactId>
-    <version>3.2-SNAPSHOT</version>
+    <version>3.3-SNAPSHOT</version>
     <name>SystemY_Client</name>
     <description>Client consuming REST naming services</description>
     <packaging>jar</packaging>
