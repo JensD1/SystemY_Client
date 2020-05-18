@@ -29,6 +29,7 @@ public class ReplicationUpdateThread extends Thread{
         long  interval = 1000;
         while(true) {
             if (System.currentTimeMillis() - startTime >= interval) {
+                startTime = System.currentTimeMillis();
                 logger.info("Checking if files are removed or added.");
                 Map<String, InetAddress> replicatedFilesMap = NodeClient.getReplicatedFilesMap();
                 boolean remove;
