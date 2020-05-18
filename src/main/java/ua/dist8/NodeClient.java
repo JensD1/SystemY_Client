@@ -759,7 +759,7 @@ public class NodeClient {
                     json.put("typeOfDest","download");
                     json.put("typeOfSource", "nonlocal");
                     json.put("fileName",fileName);
-
+                    downloadLocations.remove(sourceAddress.getHostName());
                     for (String hostName : downloadLocations){
                         sendUnicastMessage(InetAddress.getByName(hostName), json);
                         logger.debug("Sent unicast to notify download location " + hostName + " must delete " + fileName);
