@@ -35,6 +35,7 @@ public class NodeClient {
     private static NodeClient nodeClient = new NodeClient();
     private static Map<String, InetAddress> replicatedFilesMap;
     private static volatile InetAddress ownNodeAddress;
+    private static ReplicationUpdateThread replicationUpdateThread;
 
 
     /**
@@ -491,6 +492,8 @@ public class NodeClient {
                     }
                 }
 
+                logger.debug("Stopping replicationUpdate.");
+                replicationUpdateThread.stop();
 
                 logger.debug("Sending Unicast message to neighbours..");
                 String previousNeighbor = responseJSON.getString("previousNode");
@@ -1087,6 +1090,9 @@ public class NodeClient {
             else{
                 logger.warn("No local files to replicate.");
             }
+            logger.debug("Starting ReplicationUpdateThread.");
+            replicationUpdateThread = new ReplicationUpdateThread();
+            replicationUpdateThread.start();
         } catch (Exception e){
             logger.error(e);
         }
