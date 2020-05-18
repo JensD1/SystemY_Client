@@ -736,6 +736,7 @@ public class NodeClient {
                     StringBuilder downloadLocationWrite = new StringBuilder();
                     for(String temp: downloadLocationsWriteArray){
                         downloadLocationWrite.append(",").append(temp);
+                        logger.debug("downloadLocationWrite is: " + downloadLocationWrite);
                     }
                     jsonLog.put("downloadLocations",downloadLocationWrite);
                     byte[] contents = jsonLog.toString().getBytes();
