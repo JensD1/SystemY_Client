@@ -71,6 +71,7 @@ public class TCPThreadHandler extends Thread {
                     case "replicationShutdown" : {
                         NodeClient.getInstance().removeReplicatedFile(json.getString("fileName"), json.getString("typeOfDest")
                                 , json.getString("typeOfSource"), clientSocket.getInetAddress());
+                        break;
                     }
                     default:
                         logger.error("Received a wrong typeOfMessage! The type was: " + json.getString("typeOfMsg"));
