@@ -922,6 +922,7 @@ public class NodeClient {
                             logjson.put("owner", address[0].getHostName());
                             logjson.put("isDownloaded", true);
                             logjson.put("downloadLocations", logjson.getString("downloadLocations").concat("," + ownNodeAddress.getHostName()));
+                            logger.debug("The new content of downloadLocations is: "+ logjson.getString("downloadLocations"));
                             fis.close();
                             bis.close();
 
