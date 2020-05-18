@@ -7,8 +7,8 @@ import java.net.*;
 
 public class UDPListener extends Thread {
     private static final Logger logger = LogManager.getLogger();
-    private volatile boolean isRunning = true;
-
+    private volatile boolean isRunning = false;
+    MulticastSocket ms;
     @Override
     /**
      * Constantly listens to UDP requests.
@@ -16,9 +16,10 @@ public class UDPListener extends Thread {
      */
     public void run() {
         try{
+            isRunning = true;
             // UDP parameters
             logger.info("Initializing UDP listener..." );
-            MulticastSocket ms = new MulticastSocket(6012);
+            ms = new MulticastSocket(6012);
             InetAddress MCgroup = InetAddress.getByName("224.0.0.200");
             ms.joinGroup(MCgroup); // todo
             logger.debug("Listening on Multicast address 224.0.0.200");
@@ -31,12 +32,25 @@ public class UDPListener extends Thread {
                 logger.info("UDP Packet received! Creating new thread(ID= "+thread.getId()+") to process the request.");
                 thread.start();
             }
-        }catch(Exception e){
-            System.out.println(e);
+            logger.debug("The UDPListener thread has ended.");
+        } catch (SocketException e){
+            logger.trace(e);
+        } catch(Exception e){
+            logger.error(e);
         }
     }
 
     public void stopRunning(){
-        isRunning = false;
+        try{
+            ms.close();
+            isRunning = false;
+        }
+        catch (Exception e){
+            logger.error(e);
+        }
+    }
+
+    public boolean isRunning(){
+        return isRunning;
     }
 }
