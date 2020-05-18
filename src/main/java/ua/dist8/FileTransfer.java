@@ -25,7 +25,7 @@ public class FileTransfer {
      * @param typeOfMessage contains which type of message this is.
      *                      This should be either "replication", "fileRequest" or "log".
      */
-    static public int sendFile(InetAddress toSend, String filePath, String typeOfMessage){
+    static public int sendFile(InetAddress[] toSend, String filePath, String typeOfMessage){
         int fileStatus = 1;
         try {
             JSONObject json = new JSONObject();
@@ -42,14 +42,14 @@ public class FileTransfer {
             OutputStream outputStream = null;
             InputStream inputStream = null;
             Socket socket = null;
-            if(toSend.equals(ownAddress))
+            if(toSend[0].equals(ownAddress))
                 fileStatus = 0;
             while (fileStatus == 1) {
                 // Send the json object first so the other node knows what type of message this is.
-                logger.info("SENDING FILE " + file.getName() + " : Sending a file to: " + toSend);
+                logger.info("SENDING FILE " + file.getName() + " : Sending a file to: " + toSend[0]);
                 logger.info("SENDING FILE " + file.getName() + " : The file that will be sent is: " + filePath);
                 sendingSem.acquire();
-                socket = new Socket(toSend, 5000);
+                socket = new Socket(toSend[0], 5000);
                 outputStream = socket.getOutputStream();
                 inputStream = socket.getInputStream();
                 outputStream.write(json.toString().getBytes());
@@ -68,13 +68,13 @@ public class FileTransfer {
                     socket.close();
                     NodeClient nodeClient = NodeClient.getInstance();
                     do {
-                        String tempHostName = toSend.getHostName().split("_")[1];
+                        String tempHostName = toSend[0].getHostName().split("_")[1];
                         logger.debug("SENDING FILE " + file.getName() + " : TempHostName is " + tempHostName);
                         tempHostName = tempHostName.split("\\.")[0];
                         logger.debug("SENDING FILE " + file.getName() + " : TempHostName is " + tempHostName);
-                        toSend = nodeClient.nodeRequest(Hashing.createHash(tempHostName)- 1);
-                        logger.info("SENDING FILE " + file.getName() + " : New address is: "+toSend);
-                    } while(toSend.equals(ownAddress));
+                        toSend[0] = nodeClient.nodeRequest(Hashing.createHash(tempHostName)- 1);
+                        logger.info("SENDING FILE " + file.getName() + " : New address is: "+toSend[0]);
+                    } while(toSend[0].equals(ownAddress));
                 }
             }
 

@@ -656,9 +656,9 @@ public class NodeClient {
             if(listOfFiles != null) {
                 for (File file : listOfFiles) {
                     logger.info("SENDING FILE " + file.getName() + " : Check who is the owner of file "+ file.getName() + "according to the NamingServer.");
-                    InetAddress address = fileRequest(file.getName());
+                    InetAddress[] address = {fileRequest(file.getName())};
 
-                    if(!address.equals(ownNodeAddress)){
+                    if(!address[0].equals(ownNodeAddress)){
                         int fileStatus = FileTransfer.sendFile(address, file.getPath(), "replication");
                         moveFile(file, "/home/pi/replicatedFiles/");
                         if(fileStatus != 0){
@@ -690,7 +690,7 @@ public class NodeClient {
                             }
                             logger.debug("SENDING FILE " + file.getName() + " : The logstring contains: " + logstring);
                             JSONObject logjson = new JSONObject(logstring.toString());
-                            logjson.put("owner", address.getHostName());
+                            logjson.put("owner", address[0].getHostName());
                             logjson.put("isDownloaded", true);
                             logjson.put("downloadLocations", logjson.getString("downloadLocations").concat("," + ownNodeAddress.getHostName()));
                             fis.close();
@@ -709,7 +709,7 @@ public class NodeClient {
                             fos.close();
                             fileSem.release();
                             logger.info("SENDING FILE " + file.getName() + " : log file adjusted.");
-                            logger.info("SENDING FILE " + file.getName() + " : Sending log file to " + address + ".");
+                            logger.info("SENDING FILE " + file.getName() + " : Sending log file to " + address[0] + ".");
                             FileTransfer.sendFile(address, "/home/pi/logFiles/" + file.getName() + "Log", "log");
                             logger.info("SENDING FILE " + file.getName() + " : Log file successfully sent!");
                         }
@@ -842,22 +842,22 @@ public class NodeClient {
             if(listOfFiles != null) {
                 for (File file : listOfFiles) {
                     logger.info("SENDING FILE " + file.getName() + " : replicating file "+file.getName());
-                    InetAddress address = fileRequest(file.getName());
-                    logger.debug("SENDING FILE " + file.getName() + " : Address to send to is: " + address);
+                    InetAddress[] address = {fileRequest(file.getName())};
+                    logger.debug("SENDING FILE " + file.getName() + " : Address to send to is: " + address[0]);
                     logger.debug("SENDING FILE " + file.getName() + " : My own localHost address is: " + ownNodeAddress);
-                    if(address.equals(ownNodeAddress)){
+                    if(address[0].equals(ownNodeAddress)){
                         logger.warn("SENDING FILE " + file.getName() + " : Address to send to is myself, changing this address.");
-                        while(address.equals(ownNodeAddress)){
-                            address = nodeRequest(previousID);
-                            logger.info("SENDING FILE " + file.getName() + " : Current address to send to is: " + address);
+                        while(address[0].equals(ownNodeAddress)){
+                            address[0] = nodeRequest(previousID);
+                            logger.info("SENDING FILE " + file.getName() + " : Current address to send to is: " + address[0]);
                         }
                     }
                     int proceed = FileTransfer.sendFile(address, file.getPath(), "replication");
                     if(proceed != 0){
                         logger.info("SENDING FILE " + file.getName() + " : File successfully replicated.");
                         logger.info("SENDING FILE " + file.getName() + " : Creating a log file for file " + file.getName() + "Log");
-                        createLogFile(address, file.getName() + "Log");
-                        logger.info("SENDING FILE " + file.getName() + " : Sending log file to " + address);
+                        createLogFile(address[0], file.getName() + "Log");
+                        logger.info("SENDING FILE " + file.getName() + " : Sending log file to " + address[0]);
                         FileTransfer.sendFile(address, "/home/pi/logFiles/" + file.getName() + "Log", "log");
                     }
                     logger.info("SENDING FILE " + file.getName() + " : Removing local log file.");
