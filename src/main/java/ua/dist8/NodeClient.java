@@ -817,6 +817,7 @@ public class NodeClient {
                     }
                 }
                 else {
+                    fileSem.release();
                     String filename = file.getName();
                     InetAddress destAddress = nodeRequest(previousID);
                     JSONObject json = new JSONObject();
