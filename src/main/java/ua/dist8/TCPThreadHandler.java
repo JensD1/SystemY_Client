@@ -1,17 +1,18 @@
 package ua.dist8;
 
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
 
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.Socket;
 
 public class TCPThreadHandler extends Thread {
 
     private Socket clientSocket;
     private static final Logger logger = LogManager.getLogger();
+
     TCPThreadHandler(Socket clientSocket){
         this.clientSocket = clientSocket;
     }
@@ -38,9 +39,27 @@ public class TCPThreadHandler extends Thread {
                         nodeClient.receivedShutdown(json);
                         break;
                     }
-                    case "fileRequest":
-                        //todo
+                    case "fileRequest": {
+                        NodeClient nodeClient = NodeClient.getInstance();
+                        //nodeClient.fileRequest(String fileName); // todo finish this method.
                         break;
+                    }
+                    case "replication": {
+                        logger.info("Received a replication message.");
+                        NodeClient nodeClient = NodeClient.getInstance();
+                        OutputStream clientOutput = clientSocket.getOutputStream();
+                        nodeClient.receiveFile(clientInput, json, clientOutput, json.getString("typeOfMsg"));
+                        clientOutput.close();
+                        break;
+                    }
+                    case "log": {
+                        logger.info("Received a log message.");
+                        NodeClient nodeClient = NodeClient.getInstance();
+                        OutputStream clientOutput = clientSocket.getOutputStream();
+                        nodeClient.receiveFile(clientInput, json, clientOutput, json.getString("typeOfMsg"));
+                        clientOutput.close();
+                        break;
+                    }
                     case "multicastReply": {
                         NodeClient nodeClient = NodeClient.getInstance();
                         if (json.getString("typeOfNode").equals("NS")) {
@@ -50,10 +69,20 @@ public class TCPThreadHandler extends Thread {
                         }
                         break;
                     }
+
+                    case "replicationShutdown" : {
+                        NodeClient.getInstance().removeReplicatedFile(json.getString("fileName"), json.getString("typeOfDest")
+                                , json.getString("typeOfSource"), clientSocket.getInetAddress());
+                        break;
+                    }
+                    default:
+                        logger.error("Received a wrong typeOfMessage! The type was: " + json.getString("typeOfMsg"));
                 }
             }
+
             clientInput.close();
             clientSocket.close();
+
         } catch (Exception e){
             e.printStackTrace();
         }

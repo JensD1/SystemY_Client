@@ -27,7 +27,6 @@ public class TCPListener extends Thread {
             logger.info("Listening to port 5000....");
             while (isRunning){
                 Socket clientSocket = serverSocket.accept();
-
                 TCPThreadHandler thread = new TCPThreadHandler(clientSocket);
                 logger.info("TCP Packet received! Creating new thread(ID= "+thread.getId()+") to process the request.");
                 thread.start();

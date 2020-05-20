@@ -54,7 +54,7 @@ public class NodeApplication {
 
 
         Scanner scanner = new Scanner(System.in);
-        logger.info("This is version 2.5.6");
+        logger.info("This is version 3.3.8");
         logger.info("Welcome to the client test application!");
         while(running){
             logger.info("Please enter a command. Type !help for a list of commands: ");
