@@ -14,6 +14,7 @@ import java.net.UnknownHostException;
 
 import java.net.*;
 
+import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -1175,6 +1176,7 @@ public class NodeClient {
                     sendFileAndCreatedLogFile(file);
                     InetAddress[] address = {fileRequest(file.getName())};
                     replicatedFilesMap.put(file.getName(), address[0]);
+                    Files.copy(file.toPath(), new File("/home/pi/replicatedFiles/" + file.getName()).toPath());
                 }
             }
             else{
