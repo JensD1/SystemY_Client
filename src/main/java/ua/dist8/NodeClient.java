@@ -818,15 +818,14 @@ public class NodeClient {
                 }
                 else {
                     fileSem.release();
-                    String filename = file.getName();
                     InetAddress destAddress = nodeRequest(previousID);
                     JSONObject json = new JSONObject();
                     json.put("typeOfMsg", "replicationShutdown");
                     json.put("typeOfSource","replicated");
                     json.put("typeOfDest","owner");
                     json.put("typeOfNode", "CL");
-                    json.put("fileName", filename);
-                    logger.debug("Sending message to owner of replicated file " + filename);
+                    json.put("fileName", fileName);
+                    logger.debug("Sending message to owner of replicated file " + fileName);
                     sendUnicastMessage(destAddress, json);
                 }
             }
