@@ -739,83 +739,94 @@ public class NodeClient {
             if(typeOfDest.equals("owner")) {
                 fileSem.acquire();
                 File file = new File("/home/pi/logFiles/" + fileName + "Log");
-                FileInputStream fis = new FileInputStream(file); // Reads bytes from the file.
-                BufferedInputStream bis = new BufferedInputStream(fis); // Gives extra functionality to fileInputStream so it can buffer data.
-                byte[] contents;
-                StringBuilder logstring = new StringBuilder();
-                long fileLength = file.length();
-                long current = 0;
-                while(current!=fileLength){
-                    int size = 10000;
-                    if(fileLength - current >= size)
-                        current += size;
-                    else{
-                        size = (int)(fileLength - current);
-                        current = fileLength;
+                if(file.exists()) {
+                    FileInputStream fis = new FileInputStream(file); // Reads bytes from the file.
+                    BufferedInputStream bis = new BufferedInputStream(fis); // Gives extra functionality to fileInputStream so it can buffer data.
+                    byte[] contents;
+                    StringBuilder logstring = new StringBuilder();
+                    long fileLength = file.length();
+                    long current = 0;
+                    while (current != fileLength) {
+                        int size = 10000;
+                        if (fileLength - current >= size)
+                            current += size;
+                        else {
+                            size = (int) (fileLength - current);
+                            current = fileLength;
+                        }
+                        contents = new byte[size];
+                        bis.read(contents, 0, size);
+                        String tempString = new String(contents);
+                        logstring.append(tempString);
                     }
-                    contents = new byte[size];
-                    bis.read(contents, 0, size);
-                    String tempString = new String(contents);
-                    logstring.append(tempString);
-                }
-                fis.close();
-                bis.close();
-                fileSem.release();
-                JSONObject jsonLog = new JSONObject(logstring.toString());
-                boolean isDownloaded = jsonLog.getBoolean("isDownloaded");
-                logger.debug("DownloadLocations before conversion to arraylist: " + jsonLog.getString("downloadLocations"));
-                ArrayList<String> downloadLocations = new ArrayList<String>(Arrays.asList(jsonLog.getString("downloadLocations").split(",")));
-                if (!isDownloaded && typeOfSource.equals("local")){
-
-                    logger.debug("File " + fileName + "has not been downloaded yet so it will be removed...");
-
-                    JSONObject json = new JSONObject();
-                    json.put("typeOfMsg","replicationShutdown");
-                    json.put("typeOfDest","download");
-                    json.put("typeOfSource", "nonlocal");
-                    json.put("fileName",fileName);
-                    downloadLocations.remove(sourceAddress.getHostName());
-                    for (String hostName : downloadLocations){
-                        sendUnicastMessage(InetAddress.getByName(hostName), json);
-                        logger.debug("Sent unicast to notify download location " + hostName + " must delete " + fileName);
-                    }
-
-                    file = new File("/home/pi/ownedFiles/" + fileName);
-                    boolean isDeleted = file.delete();
-                    if (isDeleted){
-                        logger.trace("Owned file: "+fileName+ " is successfully deleted");
-                    }
-                    else logger.error("Owned file: " +fileName+ " is not successfully deleted");
-
-                    file = new File("/home/pi/logFiles/" +fileName+ "Log");
-                    isDeleted = file.delete();
-                    if (isDeleted){
-                        logger.trace("Log file: "+fileName+ " is successfully deleted");
-                    }
-                    else logger.error("Log file: " +fileName+ " is not successfully deleted");
-                }
-                else{
-                    logger.debug("File " + fileName + "has already been downloaded so the log file will be updated...");
-                    String sourceName = sourceAddress.getHostName();
-                    downloadLocations.remove(sourceName);
-                    String[] downloadLocationsWriteArray = downloadLocations.toArray(new String[0]);
-                    StringBuilder downloadLocationWrite = new StringBuilder();
-                    for(String temp: downloadLocationsWriteArray){
-                        downloadLocationWrite.append(",").append(temp);
-                        logger.debug("downloadLocationWrite is: " + downloadLocationWrite);
-                    }
-                    jsonLog.put("downloadLocations",downloadLocationWrite);
-                    contents = jsonLog.toString().getBytes();
-                    int bytesLength = contents.length;
-                    fileSem.acquire();
-                    FileOutputStream fos = new FileOutputStream("/home/pi/logFiles/" + fileName + "Log");
-                    BufferedOutputStream bos = new BufferedOutputStream(fos);
-                    bos.write(contents, 0, bytesLength); // content, offset, how many bytes are read.
-                    bos.flush();
-                    bos.close();
-                    fos.close();
-                    logger.debug("Log file " + fileName + "Log" + " is updated!");
+                    fis.close();
+                    bis.close();
                     fileSem.release();
+                    JSONObject jsonLog = new JSONObject(logstring.toString());
+                    boolean isDownloaded = jsonLog.getBoolean("isDownloaded");
+                    logger.debug("DownloadLocations before conversion to arraylist: " + jsonLog.getString("downloadLocations"));
+                    ArrayList<String> downloadLocations = new ArrayList<String>(Arrays.asList(jsonLog.getString("downloadLocations").split(",")));
+                    if (!isDownloaded && typeOfSource.equals("local")) {
+
+                        logger.debug("File " + fileName + "has not been downloaded yet so it will be removed...");
+
+                        JSONObject json = new JSONObject();
+                        json.put("typeOfMsg", "replicationShutdown");
+                        json.put("typeOfDest", "download");
+                        json.put("typeOfSource", "nonlocal");
+                        json.put("fileName", fileName);
+                        downloadLocations.remove(sourceAddress.getHostName());
+                        for (String hostName : downloadLocations) {
+                            sendUnicastMessage(InetAddress.getByName(hostName), json);
+                            logger.debug("Sent unicast to notify download location " + hostName + " must delete " + fileName);
+                        }
+
+                        file = new File("/home/pi/ownedFiles/" + fileName);
+                        boolean isDeleted = file.delete();
+                        if (isDeleted) {
+                            logger.trace("Owned file: " + fileName + " is successfully deleted");
+                        } else logger.error("Owned file: " + fileName + " is not successfully deleted");
+
+                        file = new File("/home/pi/logFiles/" + fileName + "Log");
+                        isDeleted = file.delete();
+                        if (isDeleted) {
+                            logger.trace("Log file: " + fileName + " is successfully deleted");
+                        } else logger.error("Log file: " + fileName + " is not successfully deleted");
+                    } else {
+                        logger.debug("File " + fileName + "has already been downloaded so the log file will be updated...");
+                        String sourceName = sourceAddress.getHostName();
+                        downloadLocations.remove(sourceName);
+                        String[] downloadLocationsWriteArray = downloadLocations.toArray(new String[0]);
+                        StringBuilder downloadLocationWrite = new StringBuilder();
+                        for (String temp : downloadLocationsWriteArray) {
+                            downloadLocationWrite.append(",").append(temp);
+                            logger.debug("downloadLocationWrite is: " + downloadLocationWrite);
+                        }
+                        jsonLog.put("downloadLocations", downloadLocationWrite);
+                        contents = jsonLog.toString().getBytes();
+                        int bytesLength = contents.length;
+                        fileSem.acquire();
+                        FileOutputStream fos = new FileOutputStream("/home/pi/logFiles/" + fileName + "Log");
+                        BufferedOutputStream bos = new BufferedOutputStream(fos);
+                        bos.write(contents, 0, bytesLength); // content, offset, how many bytes are read.
+                        bos.flush();
+                        bos.close();
+                        fos.close();
+                        logger.debug("Log file " + fileName + "Log" + " is updated!");
+                        fileSem.release();
+                    }
+                }
+                else {
+                    String filename = file.getName();
+                    InetAddress destAddress = nodeRequest(previousID);
+                    JSONObject json = new JSONObject();
+                    json.put("typeOfMsg", "replicationShutdown");
+                    json.put("typeOfSource","replicated");
+                    json.put("typeOfDest","owner");
+                    json.put("typeOfNode", "CL");
+                    json.put("fileName", filename);
+                    logger.debug("Sending message to owner of replicated file " + filename);
+                    sendUnicastMessage(destAddress, json);
                 }
             }
 
@@ -986,7 +997,7 @@ public class NodeClient {
                             logger.debug("SENDING FILE " + file.getName() + " : The logstring contains: " + logstring);
                             JSONObject logjson = new JSONObject(logstring.toString());
                             logjson.put("owner", address[0].getHostName());
-                            logjson.put("isDownloaded", true);
+                            logjson.put("isDownloaded", false);
                             logjson.put("downloadLocations", logjson.getString("downloadLocations").concat("," + ownNodeAddress.getHostName()));
                             logger.debug("SENDING FILE " + file.getName() + " : The new content of downloadLocations is: "+ logjson.getString("downloadLocations"));
                             fis.close();
