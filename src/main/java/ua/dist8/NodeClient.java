@@ -442,34 +442,9 @@ public class NodeClient {
                 logger.debug("Neighbours received from NamingServer!");
                 JSONObject responseJSON = new JSONObject(response);
 
-                // Send a message to the owners of each local file. At the owner, the removeReplicatedFiles method will be executed
-                File folder = new File("/home/pi/localFiles/");
-                File[] listOfFiles = folder.listFiles();
-                for (File file : listOfFiles) {
-                    if (file.isFile()) {
-                        String filename = file.getName();
-                        InetAddress destAddress = InetAddress.getByName(getFileLocation(file));
-                        if(destAddress.equals(ownNodeAddress)) {
-                            logger.warn("Address to send to is myself, changing this address.");
-                            while (destAddress.equals(ownNodeAddress)) {
-                                destAddress = nodeRequest(previousID);
-                                logger.info("Current address to send to is: " + destAddress);
-                            }
-                        }
-                        JSONObject json = new JSONObject();
-                        json.put("typeOfMsg", "replicationShutdown");
-                        json.put("typeOfSource","local");
-                        json.put("typeOfDest","owner");
-                        json.put("typeOfNode", "CL");
-                        json.put("fileName", filename);
-                        logger.debug("Sending message to owner of local file " + filename);
-                        sendUnicastMessage(destAddress, json);
-                    }
-                }
-
                 // Send a message to the owners of each replicated file. At the owner, the removeReplicatedFiles method will be executed
-                folder = new File("/home/pi/replicatedFiles/");
-                listOfFiles = folder.listFiles();
+                File folder = new File("/home/pi/replicatedFiles/");
+                File[] listOfFiles = folder.listFiles();
                 for (File file : listOfFiles) {
                     if (file.isFile()) {
                         String filename = file.getName();
@@ -488,6 +463,31 @@ public class NodeClient {
                         json.put("typeOfNode", "CL");
                         json.put("fileName", filename);
                         logger.debug("Sending message to owner of replicated file " + filename);
+                        sendUnicastMessage(destAddress, json);
+                    }
+                }
+
+                // Send a message to the owners of each local file. At the owner, the removeReplicatedFiles method will be executed
+                folder = new File("/home/pi/localFiles/");
+                listOfFiles = folder.listFiles();
+                for (File file : listOfFiles) {
+                    if (file.isFile()) {
+                        String filename = file.getName();
+                        InetAddress destAddress = InetAddress.getByName(getFileLocation(file));
+                        if(destAddress.equals(ownNodeAddress)) {
+                            logger.warn("Address to send to is myself, changing this address.");
+                            while (destAddress.equals(ownNodeAddress)) {
+                                destAddress = nodeRequest(previousID);
+                                logger.info("Current address to send to is: " + destAddress);
+                            }
+                        }
+                        JSONObject json = new JSONObject();
+                        json.put("typeOfMsg", "replicationShutdown");
+                        json.put("typeOfSource","local");
+                        json.put("typeOfDest","owner");
+                        json.put("typeOfNode", "CL");
+                        json.put("fileName", filename);
+                        logger.debug("Sending message to owner of local file " + filename);
                         sendUnicastMessage(destAddress, json);
                     }
                 }
