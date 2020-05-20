@@ -915,8 +915,10 @@ public class NodeClient {
                 fileSem.acquire();
                 FileOutputStream fos;
                 if (type.equals("replication")) {
+                    logger.debug("RECEIVING FILE " + fileName + " : type is replication, creating fileoutputstream.");
                     fos = new FileOutputStream("/home/pi/ownedFiles/" + fileName);
                 } else {
+                    logger.debug("RECEIVING FILE " + fileName + " : type is not replication, creating fileoutputstream.");
                     fos = new FileOutputStream("/home/pi/logFiles/" + fileName);
                 }
                 BufferedOutputStream bos = new BufferedOutputStream(fos);
