@@ -447,7 +447,14 @@ public class NodeClient {
                 for (File file : listOfFiles) {
                     if (file.isFile()) {
                         String filename = file.getName();
-                        String destAddress = getFileLocation(file);
+                        InetAddress destAddress = InetAddress.getByName(getFileLocation(file));
+                        if(destAddress.equals(ownNodeAddress)) {
+                            logger.warn("Address to send to is myself, changing this address.");
+                            while (destAddress.equals(ownNodeAddress)) {
+                                destAddress = nodeRequest(previousID);
+                                logger.info("Current address to send to is: " + destAddress);
+                            }
+                        }
                         JSONObject json = new JSONObject();
                         json.put("typeOfMsg", "replicationShutdown");
                         json.put("typeOfSource","local");
@@ -455,7 +462,7 @@ public class NodeClient {
                         json.put("typeOfNode", "CL");
                         json.put("fileName", filename);
                         logger.debug("Sending message to owner of local file " + filename);
-                        sendUnicastMessage(InetAddress.getByName(destAddress), json);
+                        sendUnicastMessage(destAddress, json);
                     }
                 }
 
@@ -465,7 +472,14 @@ public class NodeClient {
                 for (File file : listOfFiles) {
                     if (file.isFile()) {
                         String filename = file.getName();
-                        String destAddress = getFileLocation(file);
+                        InetAddress destAddress = InetAddress.getByName(getFileLocation(file));
+                        if(destAddress.equals(ownNodeAddress)) {
+                            logger.warn("Address to send to is myself, changing this address.");
+                            while (destAddress.equals(ownNodeAddress)) {
+                                destAddress = nodeRequest(previousID);
+                                logger.info("Current address to send to is: " + destAddress);
+                            }
+                        }
                         JSONObject json = new JSONObject();
                         json.put("typeOfMsg", "replicationShutdown");
                         json.put("typeOfSource","replicated");
@@ -473,7 +487,7 @@ public class NodeClient {
                         json.put("typeOfNode", "CL");
                         json.put("fileName", filename);
                         logger.debug("Sending message to owner of replicated file " + filename);
-                        sendUnicastMessage(InetAddress.getByName(destAddress), json);
+                        sendUnicastMessage(destAddress, json);
                     }
                 }
 
