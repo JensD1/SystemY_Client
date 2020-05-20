@@ -83,6 +83,7 @@ public class SyncAgent extends Agent {
         });
 
         //lock stuff??
+        // make a method later to  send lock list to node, node can check the list if resource is open or not
         parallelBehaviour.addSubBehaviour(new CyclicBehaviour(this) {
             @Override
             public void action() {
