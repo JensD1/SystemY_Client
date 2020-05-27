@@ -117,6 +117,7 @@ public class FileTransfer {
             fis.close();
             bis.close();
             readSem.release();
+            logger.info("SENDING FILE " + file.getName() + " : Connection is closed.");
             // todo make sure this send is also received by the other one.
         } catch(Exception e){
             logger.error(e);
