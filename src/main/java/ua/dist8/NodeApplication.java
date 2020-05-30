@@ -32,7 +32,7 @@ public class NodeApplication {
         //Create a Profile, where the launch arguments are stored
         Profile profile = new ProfileImpl();
         AgentContainer container = null;
-        profile.setParameter(Profile.CONTAINER_NAME, "TestContainer");
+        profile.setParameter(Profile.CONTAINER_NAME, "REST");
         profile.setParameter(Profile.MAIN_HOST, "host2");//namingserver will have the main container and is located at host 2
 
         String agentName = nodeClient.getHostNameHash();
@@ -44,7 +44,7 @@ public class NodeApplication {
             logger.error("Unable to connect to the main container on the NamingServer..");
         }
         try {
-            AgentController ac = container.createNewAgent(agentName, "NodeAgent", null );
+            AgentController ac = container.createNewAgent(agentName, "SyncAgent", null );
             ac.start();
         }
         catch (Exception e){

@@ -1209,6 +1209,8 @@ public class NodeClient {
         }
     }
 
-
+    public Integer getPreviousID() {
+        return previousID;
+    }
 }
 
