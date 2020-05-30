@@ -37,24 +37,24 @@ public class NodeApplication {
 
         String agentName = nodeClient.getHostNameHash();
 
-        try {
-            container = runtime.createAgentContainer(profile);
-        }catch(Exception e){
-            logger.error(e);
-            logger.error("Unable to connect to the main container on the NamingServer..");
-        }
-        try {
-            AgentController ac = container.createNewAgent(agentName, "SyncAgent", null );
-            ac.start();
-        }
-        catch (Exception e){
-            logger.error(e);
-        }
+        //try {
+        //    container = runtime.createAgentContainer(profile);
+        //}catch(Exception e){
+        //    logger.error(e);
+        //    logger.error("Unable to connect to the main container on the NamingServer..");
+        // }
+        //try {
+        //    AgentController ac = container.createNewAgent(agentName, "SyncAgent", null );
+        //    ac.start();
+        //}
+        //catch (Exception e){
+        //   logger.error(e);
+        //}
 
 
 
         Scanner scanner = new Scanner(System.in);
-        logger.info("This is version 3.3.8");
+        logger.info("This is version 3.3.9");
         logger.info("Welcome to the client test application!");
         while(running){
             logger.info("Please enter a command. Type !help for a list of commands: ");

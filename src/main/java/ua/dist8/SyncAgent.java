@@ -86,8 +86,8 @@ public class SyncAgent extends Agent {
                         //update local list and global list on create and delete
                         //send ACL message to previous node agent with new global list
                         ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
-                        AID dest = new AID(nodeClient.getPreviousID()); //does not work
-                        msg.addReceiver(dest);
+                        //AID dest = new AID(nodeClient.getPreviousID()); //does not work
+                        //msg.addReceiver(dest);
                         msg.setContentObject( synchronizedMap );
                         send(msg);
 
