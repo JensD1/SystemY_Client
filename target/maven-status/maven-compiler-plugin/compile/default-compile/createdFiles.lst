@@ -1,10 +1,10 @@
-ua\dist8\FileTransfer.class
 ua\dist8\UDPListener.class
-ua\dist8\Hashing.class
 ua\dist8\FileLocation.class
 ua\dist8\NodeApplication.class
-ua\dist8\TCPThreadHandler.class
-ua\dist8\UDPThreadHandler.class
 ua\dist8\TCPListener.class
 ua\dist8\ReplicationUpdateThread.class
+ua\dist8\FileTransfer.class
+ua\dist8\Hashing.class
+ua\dist8\TCPThreadHandler.class
+ua\dist8\UDPThreadHandler.class
 ua\dist8\NodeClient.class
